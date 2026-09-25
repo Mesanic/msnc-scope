@@ -1,0 +1,2295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>scope</title>
+<style>
+:root {
+  --bg: #0e1116; --panel: #161b22; --panel2: #1c232c; --line: #2a323d;
+  --fg: #e6edf3; --fg2: #9aa7b4; --fg3: #6b7embed;
+  --accent: #4a9eff; --edge: #333d49; --edge-hi: #7fb2ff;
+  --warn: #f0a830; --danger: #e05252; --ok: #3fb950;
+}
+:root { --fg3: #6b7885; }
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f8fa; --panel: #ffffff; --panel2: #f0f3f6; --line: #d8dee4;
+    --fg: #1f2328; --fg2: #57606a; --fg3: #8c959f;
+    --accent: #0969da; --edge: #c4ccd4; --edge-hi: #0969da;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  display: flex; flex-direction: column;
+}
+header {
+  display: flex; align-items: center; gap: 14px; padding: 8px 14px;
+  background: var(--panel); border-bottom: 1px solid var(--line); flex: none; flex-wrap: wrap;
+}
+.brand { font-weight: 650; letter-spacing: .02em; }
+.brand small { color: var(--fg2); font-weight: 400; margin-left: 8px; }
+.tabs { display: flex; background: var(--panel2); border-radius: 7px; padding: 2px; }
+.tabs button {
+  border: 0; background: transparent; color: var(--fg2); font: inherit; font-weight: 550;
+  padding: 5px 14px; border-radius: 5px; cursor: pointer;
+}
+.tabs button[aria-selected="true"] { background: var(--accent); color: #fff; }
+#search {
+  flex: 1; min-width: 180px; max-width: 380px; background: var(--panel2); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; font: inherit;
+}
+#search:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.counts { color: var(--fg2); font-variant-numeric: tabular-nums; margin-left: auto; }
+main { flex: 1; display: flex; min-height: 0; }
+aside {
+  width: 232px; flex: none; background: var(--panel); border-right: 1px solid var(--line);
+  overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 16px;
+}
+aside h3 {
+  margin: 0 0 7px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--fg3); font-weight: 650;
+}
+.row { display: flex; align-items: center; gap: 7px; padding: 2px 0; cursor: pointer; font-size: 12.5px; }
+.row input { accent-color: var(--accent); margin: 0; cursor: pointer; }
+.row .sw { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.row .n { margin-left: auto; color: var(--fg3); font-variant-numeric: tabular-nums; font-size: 11px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  border: 1px solid var(--line); background: var(--panel2); color: var(--fg2);
+  border-radius: 20px; padding: 2px 9px; font-size: 11px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn {
+  width: 100%; text-align: left; border: 1px solid var(--line); background: var(--panel2);
+  color: var(--fg); border-radius: 7px; padding: 7px 10px; font: inherit; cursor: pointer;
+  margin-bottom: 5px;
+}
+.btn:hover { border-color: var(--accent); }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn small { display: block; color: var(--fg3); font-size: 10.5px; margin-top: 1px; }
+.btn[aria-pressed="true"] small { color: rgba(255,255,255,.8); }
+#stage { flex: 1; position: relative; min-width: 0; }
+canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+canvas.dragging { cursor: grabbing; }
+#tip {
+  position: absolute; pointer-events: none; background: var(--panel); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 9px; font-size: 11.5px;
+  max-width: 330px; box-shadow: 0 6px 18px rgba(0,0,0,.35); display: none; z-index: 5;
+}
+#tip b { color: var(--accent); }
+#crumbs {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; font-size: 11.5px;
+  color: var(--fg2); display: none; z-index: 4; overflow-x: auto; white-space: nowrap;
+}
+#crumbs b { color: var(--fg); }
+#crumbs .sep { color: var(--accent); margin: 0 6px; }
+#banner {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  background: var(--warn); color: #201a08; border-radius: 20px; padding: 4px 14px;
+  font-size: 11.5px; font-weight: 550; display: none; z-index: 4;
+}
+#detail {
+  width: 330px; flex: none; background: var(--panel); border-left: 1px solid var(--line);
+  overflow-y: auto; padding: 14px; display: none;
+}
+#detail.open { display: block; }
+#detail .key { font-weight: 650; word-break: break-all; margin-bottom: 3px; }
+#detail .meta { color: var(--fg3); font-size: 11px; margin-bottom: 10px; }
+#detail .sum {
+  background: var(--panel2); border-left: 2px solid var(--accent); padding: 8px 10px;
+  border-radius: 0 6px 6px 0; margin-bottom: 12px; font-size: 12.5px;
+}
+#detail h4 {
+  margin: 14px 0 5px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em;
+  color: var(--fg3);
+}
+#detail a.node {
+  display: block; color: var(--accent); text-decoration: none; padding: 2px 0;
+  font-size: 12px; cursor: pointer; word-break: break-all;
+}
+#detail a.node:hover { text-decoration: underline; }
+.badge {
+  display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10.5px;
+  font-weight: 600; margin-right: 5px;
+}
+.close { float: right; border: 0; background: none; color: var(--fg3); cursor: pointer; font-size: 17px; line-height: 1; }
+code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; word-break: break-all; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--fg2); padding: 1.5px 0; }
+/* Swatches mirror the shapes the canvas draws — a flat dot for every row would collapse
+   ring vs hexagon vs hatch, and the two orange encodings would be indistinguishable. */
+.legend-item i { width: 13px; height: 13px; flex: none; border-radius: 50%; background: currentColor; }
+.legend-item i.ring { background: none; border: 1.5px solid currentColor; }
+.legend-item i.ring2 { background: none; border: 1.5px solid currentColor; box-shadow: 0 0 0 1.5px var(--panel), 0 0 0 3px currentColor; }
+.legend-item i.dashring { background: none; border: 1.5px dashed currentColor; }
+.legend-item i.hex { border-radius: 0; clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); }
+.legend-item i.hex.glow { box-shadow: 0 0 7px currentColor; }
+.legend-item i.line { border-radius: 0; height: 0; background: none; border-top: 2px dashed currentColor; }
+.legend-item i.hatch { background: none; border-radius: 0; font-size: 12px; line-height: 13px; text-align: center; font-style: normal; }
+.empty { color: var(--fg3); font-size: 12px; padding: 20px; text-align: center; }
+.legend-item[data-spot] { cursor: pointer; border-radius: 4px; padding: 1.5px 3px; margin: 0 -3px; }
+.legend-item[data-spot]:hover { background: var(--panel2); color: var(--fg); }
+.legend-item i.tri { border-radius: 0; background: none; border-left: 6.5px solid transparent; border-right: 6.5px solid transparent; border-bottom: 11px solid currentColor; height: 0; }
+.legend-item i.sq { border-radius: 2px; }
+.legend-item i.dia { border-radius: 1px; transform: rotate(45deg) scale(.8); }
+.legend-item i.blob { border-radius: 50%; background: currentColor; opacity: .28; box-shadow: 0 0 0 3px currentColor; }
+#zoomhint {
+  position: absolute; right: 12px; top: 10px; background: var(--panel); border: 1px solid var(--line);
+  color: var(--fg3); border-radius: 20px; padding: 3px 11px; font-size: 11px; z-index: 4;
+  pointer-events: none; font-variant-numeric: tabular-nums;
+}
+#empty {
+  position: absolute; inset: 0; display: none; place-content: center; text-align: center;
+  pointer-events: none; padding: 40px;
+}
+#empty.on { display: grid; }
+#empty div { pointer-events: auto; max-width: 380px; margin: 0 auto; }
+#empty b { display: block; font-size: 15px; margin-bottom: 6px; }
+#empty p { color: var(--fg2); font-size: 12.5px; margin: 0 0 12px; }
+#empty button {
+  border: 1px solid var(--accent); background: var(--accent); color: #fff; font: inherit;
+  border-radius: 7px; padding: 6px 14px; cursor: pointer;
+}
+/* File X-ray: the file as a strip of its own lines, every symbol a tick where it starts. */
+.xray { margin: 4px 0 10px; }
+.xr-bar {
+  position: relative; height: 34px; background: var(--panel2); border: 1px solid var(--line);
+  border-radius: 5px; overflow: hidden;
+}
+.xr-bar i {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); opacity: .75;
+}
+.xr-bar i:hover { opacity: 1; width: 3px; }
+.xr-scale { display: flex; justify-content: space-between; color: var(--fg3); font-size: 10px; margin-top: 2px; }
+.ego { width: 100%; height: 150px; display: block; }
+.ego text { font: 9px ui-sans-serif, system-ui; fill: var(--fg2); }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">scope <small id="repo-name"></small></div>
+  <div class="tabs" role="tablist">
+    <button id="tab-graph" role="tab" aria-selected="true">Knowledge graph</button>
+    <button id="tab-flow" role="tab" aria-selected="false">Flow</button>
+  </div>
+  <input id="search" type="search" placeholder="Search paths, symbols, summaries…  ( / )">
+  <div class="counts" id="counts"></div>
+</header>
+
+<main>
+  <aside>
+    <div>
+      <h3>Views</h3>
+      <button class="btn" id="preset-work" aria-pressed="false">Work in flight
+        <small>uncommitted files and open issues</small></button>
+      <button class="btn" id="preset-impact" aria-pressed="false">Impact mode
+        <small>highlight what breaks if the selection changes</small></button>
+      <button class="btn" id="preset-disagree" aria-pressed="false">Only one tool sees it
+        <small>where the two graphs disagree</small></button>
+      <button class="btn" id="fit">Fit to screen <small>key: f</small></button>
+    </div>
+    <div>
+      <h3>Display</h3>
+      <button class="btn" id="toggle-hulls" aria-pressed="true">Containment as territory
+        <small>hulls instead of 1107 part-of lines</small></button>
+      <button class="btn" id="toggle-lod" aria-pressed="true">Semantic zoom
+        <small>modules → files → symbols as you zoom</small></button>
+    </div>
+    <div><h3>Node types</h3><div id="types"></div></div>
+    <div id="src-section" hidden><h3>Known to</h3><div id="sources"></div></div>
+    <div id="chk-section" hidden><h3>Check state</h3><div id="checkstates"></div></div>
+    <div><h3>Relationships</h3><div id="edgekinds"></div></div>
+    <div><h3>Git state</h3><div id="gitstates"></div></div>
+    <div><h3>Tags</h3><div class="chips" id="tags"></div></div>
+    <div><h3>Legend</h3><div id="legend"></div></div>
+  </aside>
+
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="tip"></div>
+    <div id="crumbs"></div>
+    <div id="banner"></div>
+    <div id="zoomhint"></div>
+    <div id="empty"><div></div></div>
+  </div>
+
+  <div id="detail"></div>
+</main>
+
+<script id="scope-data" type="application/json">/*__SCOPE_DATA__*/</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById('scope-data').textContent);
+
+// Four tables used to overlap: file was the same blue as "structural", symbol the same green
+// as "symbols", module the same purple as "ambiguous". Colour alone also cannot carry nine
+// categories for a deuteranope, so each table now owns a band -- node types are the only
+// saturated one -- and the four types that matter structurally carry a SHAPE as well, which
+// survives any colour vision. Hues are Okabe-Ito derived, lifted for a dark ground.
+const TYPE_COLOR = {
+  entry: '#ef6f2c', file: '#5cb8ec', mod: '#c77dd8', sym: '#19a97c',
+  concept: '#d9b13c', adr: '#7d74f0', skill: '#2bb5b0', note: '#8a8f98', issue: '#3fb950',
+};
+const TYPE_SHAPE = {
+  entry: 'triangle', file: 'circle', mod: 'square', sym: 'diamond',
+  concept: 'circle', adr: 'circle', skill: 'square', note: 'circle', issue: 'hexagon',
+};
+const TYPE_LABEL = {
+  entry: 'entrypoint', file: 'file', mod: 'module', sym: 'symbol',
+  concept: 'concept', adr: 'decision', skill: 'Scope itself', note: 'note', issue: 'issue',
+};
+// Two organizing principles share this graph. STRUCTURAL edges describe how the code
+// actually hangs together; EDITORIAL edges describe what people said about it. On one
+// repo editorial outnumbered structural 1385 to 1236 -- more than half the graph is
+// commentary -- and drawn identically the two are impossible to tell apart.
+const STRUCTURAL_EDGES = new Set(['imports', 'exports', 'calls', 'part-of', 'implements', 'tested-by']);
+const edgeKindOf = (t) => (STRUCTURAL_EDGES.has(t) ? 'structural' : 'editorial');
+// Desaturated on purpose: these are the colours the canvas actually strokes edges with, and
+// an edge sits behind every node. Before, the swatch promised blue/amber and the canvas drew
+// everything grey -- the legend was describing a picture that did not exist.
+const EKIND_COLOR = { structural: '#7f93ab', editorial: '#b39a63' };
+const EKIND_LABEL = { structural: 'structural (imports, calls, tests)', editorial: 'editorial (issues, docs, notes)' };
+// Provenance is drawn on the node itself as fill-vs-outline, not as a hue, so the facet
+// swatches mirror that shape instead of inventing three more colours that collide with the
+// node types. SRC_SHAPE is the legend's half of the same encoding.
+const SRC_COLOR = { both: '#c9d4e0', files: '#93a3b5', symbols: '#93a3b5' };
+const SRC_SHAPE = { both: '', files: 'ring', symbols: 'dashring' };
+const SRC_HINT = { both: 'solid', files: 'outlined', symbols: 'dashed outline' };
+const SRC_LABEL = { both: 'both engines', files: 'file graph only', symbols: 'symbol graph only' };
+const CHK_COLOR = { drift: '#e08a2e', dangling: '#e0455f', orphan: '#9aa7b4', ambiguous: '#b06fd0' };
+const CHK_LABEL = { drift: 'drifted', dangling: 'dangling ref', orphan: 'orphaned note', ambiguous: 'ambiguous note' };
+const GIT_COLOR = {
+  pushed: null, unpushed: '#f0a830', staged: '#4a90d9',
+  modified: '#e07b39', untracked: '#a3adb9', conflicted: '#e05252',
+};
+const GIT_LABEL = {
+  pushed: 'pushed', unpushed: 'committed, not pushed', staged: 'staged',
+  modified: 'modified', untracked: 'untracked', conflicted: 'conflicted',
+};
+const FLOW_TYPES = new Set(['imports', 'calls']);
+const FLOW_NODE_TYPES = new Set(['file', 'entry', 'mod', 'adr']);
+// Containment is drawn as enclosure, never as a line. On a merged graph part-of is 49% of all
+// edges (1107 of 2258 on the reference repo) and drawn as a line it is indistinguishable from
+// a dependency -- half the ink saying "these two things are near each other", which the hull
+// says better. The springs stay: containment is what pulls a file's symbols into a clump.
+const CONTAIN_TYPES = new Set(['part-of']);
+// A test file is a leaf of the dependency graph that happens to have no importers, so
+// longest-path layering files it under "entry points" beside src/index.ts. It is not one.
+const RE_TEST_DIR = /(^|\/)(tests?|spec|__tests__)\//i;
+const RE_TEST_FILE = /(^|\/)(test_[^/]*|[^/]*[._](test|spec))\.[a-z]+$/i;
+const RE_TEST_BARE = /(^|\/)tests\.[a-z]+$/i;
+const isTestPath = (k) => RE_TEST_DIR.test(k) || RE_TEST_FILE.test(k) || RE_TEST_BARE.test(k);
+
+// ---------------------------------------------------------------- model
+const nodes = DATA.nodes;
+const N = nodes.length;
+const idx = new Map();
+nodes.forEach((n, i) => idx.set(n.id, i));
+
+const edges = [];
+for (const e of DATA.edges) {
+  const a = idx.get(e[0]);
+  const b = idx.get(e[2]);
+  if (a === undefined || b === undefined) continue;
+  edges.push({ a, b, type: e[1], ei: edges.length });
+}
+
+const gitOf = new Array(N).fill(null);
+if (DATA.git) {
+  const def = DATA.git.default || null;
+  for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    if (!['file', 'entry', 'adr'].includes(n.t)) continue;
+    gitOf[i] = (DATA.git.files && DATA.git.files[n.k]) || def;
+  }
+}
+const issueOf = new Array(N).fill(null);
+if (DATA.issues) {
+  for (let i = 0; i < N; i++) {
+    if (nodes[i].t !== 'issue') continue;
+    issueOf[i] = DATA.issues.issues[nodes[i].k.replace('#', '')] || null;
+  }
+}
+
+const outAdj = Array.from({ length: N }, () => []);
+const inAdj = Array.from({ length: N }, () => []);
+edges.forEach((e, ei) => { outAdj[e.a].push(ei); inAdj[e.b].push(ei); });
+
+// Degree drives node size from here on. radius() used to read `w`, which ran 1..8 on the
+// reference graph and mapped 65% of nodes into a 1.3px band while real degree ran 0..173 --
+// the hub you need to find first drew the same size as a leaf.
+const deg = new Int32Array(N);
+for (const e of edges) { deg[e.a]++; deg[e.b]++; }
+let maxDeg = 1;
+for (let i = 0; i < N; i++) if (deg[i] > maxDeg) maxDeg = deg[i];
+
+// Containment tree, read off the part-of edges the graph no longer draws as lines. Symbols
+// hang under their file, files under their module, modules under a parent module.
+const parentOf = new Int32Array(N).fill(-1);
+const childrenOf = Array.from({ length: N }, () => []);
+for (const e of edges) {
+  if (!CONTAIN_TYPES.has(e.type)) continue;
+  if (e.a === e.b || parentOf[e.a] !== -1) continue;   // one parent per node; first wins
+  parentOf[e.a] = e.b;
+  childrenOf[e.b].push(e.a);
+}
+const rootOf = new Int32Array(N);
+for (let i = 0; i < N; i++) {
+  let d = 0; let c = i;
+  while (parentOf[c] !== -1 && d < 8) { c = parentOf[c]; d++; }
+  rootOf[i] = c;
+}
+
+// Which zoom releases a node. Keyed on type, not on depth in the containment tree: 144 of the
+// 288 files live inside a nested module and 147 symbols hang off a file with no module at
+// all, so tree depth put symbols on screen before the files holding them.
+const LOD_TIER = {
+  mod: 0, concept: 0, adr: 0, issue: 0,
+  entry: 1, file: 1, skill: 1, note: 1,
+  sym: 2,
+};
+const tierOf = (i) => (LOD_TIER[nodes[i].t] === undefined ? 1 : LOD_TIER[nodes[i].t]);
+
+// Territories have to be bodies, not just piles of nodes. Node-level repulsion runs on a
+// 92px grid and dies past 184 units, which cannot stop two 400-unit-wide modules sitting on
+// top of each other -- and two interpenetrating hulls are worse than no hulls at all. So a
+// module also repels as one whole body at centroid level: 28 objects, 378 pairs, free.
+const groupOf = new Int32Array(N).fill(-1);
+const groupRoot = [];
+{
+  const seen = new Map();
+  for (let i = 0; i < N; i++) {
+    const r = rootOf[i];
+    if (nodes[r].t !== 'mod') continue;
+    if (!seen.has(r)) { seen.set(r, groupRoot.length); groupRoot.push(r); }
+    groupOf[i] = seen.get(r);
+  }
+}
+const G = groupRoot.length;
+const gcx = new Float64Array(G); const gcy = new Float64Array(G);
+const gcn = new Int32Array(G); const gcr = new Float64Array(G);
+const gpush = new Float64Array(G * 2);
+
+// The flow sub-graph deliberately excludes symbols so the layered view stays file-shaped.
+// Impact must not. `calls` is 889 of 2258 edges on the reference graph and every one is
+// symbol-to-symbol, so "what breaks if I change this function" -- the question Scope
+// exists to answer -- returned nothing for 795 of 1141 nodes. impIn/impOut span both tiers
+// and let containment carry the blast upward: change a symbol and its file has changed, so
+// that file's importers are inside the radius too.
+const impIn = Array.from({ length: N }, () => []);
+const impOut = Array.from({ length: N }, () => []);
+for (const e of edges) {
+  if (FLOW_TYPES.has(e.type)) { impIn[e.b].push(e.a); impOut[e.a].push(e.b); }
+  // a --tested-by--> b: a is the subject, b the test. Change a and b is what goes red.
+  else if (e.type === 'tested-by') { impIn[e.a].push(e.b); impOut[e.b].push(e.a); }
+  else if (CONTAIN_TYPES.has(e.type)) { impIn[e.a].push(e.b); impOut[e.b].push(e.a); }
+}
+
+// Flow sub-graph: dependency direction only, over code-ish nodes.
+const flowOut = Array.from({ length: N }, () => []);
+const flowIn = Array.from({ length: N }, () => []);
+const inFlow = new Array(N).fill(false);
+for (const e of edges) {
+  if (!FLOW_TYPES.has(e.type)) continue;
+  if (!FLOW_NODE_TYPES.has(nodes[e.a].t) || !FLOW_NODE_TYPES.has(nodes[e.b].t)) continue;
+  flowOut[e.a].push(e.b); flowIn[e.b].push(e.a);
+  inFlow[e.a] = true; inFlow[e.b] = true;
+}
+
+// Hop counts, not just membership: the ripple animates by distance and the rings are drawn
+// per hop, so a 9-hop dependent has to be distinguishable from a direct one.
+function bfsHops(start, adj) {
+  const hop = new Int16Array(N).fill(-1);
+  hop[start] = 0;
+  let frontier = [start];
+  let d = 0;
+  let far = 0;
+  while (frontier.length && d < 32) {
+    const next = [];
+    d++;
+    for (const cur of frontier) {
+      for (const nx of adj[cur]) {
+        if (hop[nx] !== -1) continue;
+        hop[nx] = d; far = d; next.push(nx);
+      }
+    }
+    frontier = next;
+  }
+  return { hop, far };
+}
+
+function walk(start, adj) {
+  const seen = new Set([start]);
+  const stack = [start];
+  const out = [];
+  while (stack.length) {
+    const cur = stack.pop();
+    for (const nx of adj[cur]) {
+      if (seen.has(nx)) continue;
+      seen.add(nx); out.push(nx); stack.push(nx);
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- state
+const ALL_TYPES = new Set(nodes.map((n) => n.t));
+const hasCheck = nodes.some((n) => n.chk);
+const state = {
+  view: 'graph',
+  selected: null,
+  hover: null,
+  search: '',
+  // Symbols used to start unticked -- a binary "too many, hide them" that made descending to
+  // the call tier a checkbox rather than a move. Semantic zoom replaces it: every tier is on,
+  // and the zoom level decides which one is legible. The checkbox still hard-filters.
+  types: new Set(nodes.map((n) => n.t)),
+  gitFilter: new Set(Object.keys(GIT_COLOR)),
+  tags: new Set(),
+  sources: new Set(nodes.map((n) => n.src).filter(Boolean)),
+  checks: new Set(['drift', 'dangling', '(clean)']),
+  work: false,
+  disagree: false,
+  edgeKinds: new Set(['structural', 'editorial']),
+  impact: false,
+  hulls: true,
+  lod: true,
+  spotlight: null,      // node type a hovered legend row is spotlighting
+  scale: 1, tx: 0, ty: 0,
+};
+
+// Motion lives in one place so a single reduced-motion check can flatten all of it.
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motion = {
+  ripple: -1,          // seconds since the impact ripple started; -1 = idle
+  rippleFar: 0,
+  flight: 1,           // eased 0..1 graph->flow interpolation; 1 = settled in state.view
+  flightRaw: 1,
+  flightFrom: 'graph',
+  settle: REDUCED ? 1 : 0,   // 0..1 load choreography
+  cam: null,           // eased camera tween
+  dash: 0,             // marching-ants phase for the selected flow path
+};
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+const visible = new Uint8Array(N);
+const matched = new Uint8Array(N);
+const lit = new Uint8Array(N);      // flow ribbon / impact highlight
+const seqOf = new Int16Array(N).fill(-1);
+const hopOf = new Int16Array(N).fill(-1);   // distance from the selection, in impact hops
+
+function isWorkNode(i) {
+  const g = gitOf[i];
+  if (g && g !== 'pushed') return true;
+  const iss = issueOf[i];
+  if (iss && iss.state === 'open') return true;
+  for (const ei of [...outAdj[i], ...inAdj[i]]) {
+    const e = edges[ei];
+    if (e.type !== 'mentions' && e.type !== 'closes') continue;
+    const other = e.a === i ? e.b : e.a;
+    const o = issueOf[other];
+    if (o && o.state === 'open') return true;
+  }
+  return false;
+}
+
+function recomputeVisible() {
+  const q = state.search.trim().toLowerCase();
+  let shown = 0; let hits = 0;
+  for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    let ok = state.types.has(n.t) && n.st !== 'dead';
+    if (ok && state.view === 'flow' && motion.flightRaw >= 1) ok = inFlow[i];
+    if (ok && gitOf[i]) ok = state.gitFilter.has(gitOf[i]);
+    if (ok && state.tags.size) ok = (n.g || []).some((t) => state.tags.has(t));
+    if (ok && n.src) ok = state.sources.has(n.src);
+    if (ok && hasCheck) ok = state.checks.has(n.chk || '(clean)');
+    // "Only one tool sees it": the disagreement between the two graphs, which is the
+    // reason a merged graph is worth building at all.
+    if (ok && state.disagree) ok = n.src === 'files' || n.src === 'symbols';
+    if (ok && state.work) ok = isWorkNode(i);
+    visible[i] = ok ? 1 : 0;
+    if (ok) shown++;
+    matched[i] = 0;
+    if (q && ok) {
+      const hay = (n.k + ' ' + (n.s || '') + ' ' + (n.g || []).join(' ')).toLowerCase();
+      if (hay.includes(q)) { matched[i] = 1; hits++; }
+    }
+  }
+  // Count the edges actually on screen — the flow view draws only imports/calls, so reporting
+  // the whole edge list there overstates what is being shown by an order of magnitude.
+  let drawn = 0;
+  for (const e of edges) {
+    if (!visible[e.a] || !visible[e.b]) continue;
+    if (state.view === 'flow' && !FLOW_TYPES.has(e.type)) continue;
+    // Containment is drawn as a hull, so counting its edges here would report ink that is
+    // not on the screen -- the same overstatement the flow view already guards against.
+    if (state.view === 'graph' && state.hulls && CONTAIN_TYPES.has(e.type)) continue;
+    if (!state.edgeKinds.has(edgeKindOf(e.type))) continue;
+    drawn++;
+  }
+  document.getElementById('counts').textContent =
+    q ? `${hits} match / ${shown} shown` : `${shown} of ${N} nodes · ${drawn} of ${edges.length} edges`;
+  diagnoseEmpty(shown);
+  recomputeLit();
+}
+
+function recomputeLit() {
+  lit.fill(0);
+  seqOf.fill(-1);
+  hopOf.fill(-1);
+  motion.ripple = -1;
+  const sel = state.selected;
+  if (sel === null) { drawCrumbs(null); return; }
+  lit[sel] = 1;
+  hopOf[sel] = 0;
+  if (state.impact) {
+    // Impact walks the cross-tier graph, so selecting a function actually answers the
+    // question. Hop counts are kept: the ripple replays them and the rings draw them.
+    const up = bfsHops(sel, impIn);
+    const down = bfsHops(sel, impOut);
+    for (let i = 0; i < N; i++) {
+      if (up.hop[i] > 0) { lit[i] = 2; hopOf[i] = up.hop[i]; }
+      else if (down.hop[i] > 0) { lit[i] = 3; if (hopOf[i] < 0) hopOf[i] = down.hop[i]; }
+    }
+    motion.rippleFar = Math.max(1, up.far);
+    motion.ripple = REDUCED ? Infinity : 0;   // reduced motion shows the settled end state
+    drawCrumbs(state.view === 'flow' ? longestChainSeq(sel) : null);
+  } else if (state.view === 'flow') {
+    for (const i of walk(sel, flowIn)) lit[i] = 2;    // upstream: breaks if this changes
+    for (const i of walk(sel, flowOut)) lit[i] = 3;   // downstream: what this relies on
+    drawCrumbs(longestChainSeq(sel));
+  } else {
+    for (const ei of outAdj[sel]) lit[edges[ei].b] = 3;
+    for (const ei of inAdj[sel]) lit[edges[ei].a] = 2;
+    drawCrumbs(null);
+  }
+}
+
+function longestChainSeq(sel) {
+  const chain = longestChain(sel);
+  chain.forEach((i, k) => { seqOf[i] = k + 1; });
+  return chain;
+}
+
+// Prefer a chain that starts at a declared entrypoint - "reached from src/index.ts" explains
+// something; "reached from a test file" does not.
+function longestChain(target) {
+  let best = [target]; let bestScore = -1;
+  const stack = [[target, [target], new Set([target])]];
+  let steps = 0;
+  while (stack.length && steps++ < 20000) {
+    const [cur, path, seen] = stack.pop();
+    const parents = flowIn[cur].filter((p) => !seen.has(p));
+    if (!parents.length || path.length > 14) {
+      const score = (nodes[cur].t === 'entry' ? 1000 : 0) + path.length;
+      if (score > bestScore) { bestScore = score; best = path; }
+      continue;
+    }
+    for (const p of parents) { const s = new Set(seen); s.add(p); stack.push([p, [...path, p], s]); }
+  }
+  return best.slice().reverse();
+}
+
+function drawCrumbs(chain) {
+  const el = document.getElementById('crumbs');
+  if (!chain || chain.length < 2) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<b>Execution path:</b> ' + chain
+    .map((i, k) => `<span>${k + 1}. ${escapeHtml(nodes[i].k)}</span>`)
+    .join('<span class="sep">→</span>');
+}
+
+// ---------------------------------------------------------------- layout
+const px = new Float32Array(N); const py = new Float32Array(N);
+const vx = new Float32Array(N); const vy = new Float32Array(N);
+const fx = new Float32Array(N); const fy = new Float32Array(N);
+let alpha = 1;
+let pinned = -1;
+
+function hash01(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 100000) / 100000;
+}
+
+function seedGraphLayout() {
+  const mods = nodes.map((n, i) => (n.t === 'mod' ? i : -1)).filter((i) => i >= 0);
+  const centers = new Map();
+  // Wide enough that each module gets roughly its own diameter of arc. The old ring gave 28
+  // modules 134 units of arc each to hold bodies four times that wide.
+  const R = 300 + mods.length * 52;
+  mods.forEach((i, k) => {
+    const a = (k / Math.max(1, mods.length)) * Math.PI * 2;
+    centers.set(nodes[i].k, [Math.cos(a) * R, Math.sin(a) * R]);
+    px[i] = Math.cos(a) * R; py[i] = Math.sin(a) * R;
+  });
+  for (let i = 0; i < N; i++) {
+    if (nodes[i].t === 'mod') continue;
+    const k = nodes[i].k;
+    const dir = k.includes('/') ? k.slice(0, k.lastIndexOf('/')) : null;
+    const c = (dir && centers.get(dir)) || [0, 0];
+    const a = hash01(k) * Math.PI * 2;
+    const r = 40 + hash01(k + '!') * 130;
+    px[i] = c[0] + Math.cos(a) * r;
+    py[i] = c[1] + Math.sin(a) * r;
+  }
+}
+
+// A hull is only readable if the things it wraps are actually near each other, so once
+// containment stopped being a line it had to become a stronger force instead. Containment
+// springs are short and stiff and sized by tier -- symbols sit right on their file, files
+// orbit their module -- which is what turns a hairball into separable territory.
+const springs = [];
+function buildSprings() {
+  springs.length = 0;
+  for (const e of edges) {
+    if (CONTAIN_TYPES.has(e.type)) {
+      // Rest length scales with how many siblings share the parent, so a file holding thirty
+      // symbols gets a disc to hold them in rather than a knot.
+      const kids = Math.sqrt(childrenOf[e.b].length || 1);
+      const rest = nodes[e.a].t === 'sym' ? 16 + kids * 6
+        : nodes[e.a].t === 'mod' ? 210
+          : 70 + kids * 10;
+      springs.push([e.a, e.b, rest, 0.04]);
+      continue;
+    }
+    // A call from one module into another is the single strongest force smearing a module
+    // across the map: 889 of them, each dragging one symbol out of its own territory. They
+    // still pull -- that is the dependency structure -- but softly and from further away.
+    const cross = groupOf[e.a] !== groupOf[e.b];
+    const base = (e.type === 'blocks' || e.type === 'mentions') ? 95 : 62;
+    springs.push([e.a, e.b, cross ? base * 2.4 : base, cross ? 0.006 : 0.026]);
+  }
+}
+
+const CELL = 92;
+function step() {
+  fx.fill(0); fy.fill(0);
+  const grid = new Map();
+  for (let i = 0; i < N; i++) {
+    if (!visible[i]) continue;
+    const key = ((px[i] / CELL) | 0) + ',' + ((py[i] / CELL) | 0);
+    let arr = grid.get(key);
+    if (!arr) { arr = []; grid.set(key, arr); }
+    arr.push(i);
+  }
+  for (const [key, arr] of grid) {
+    const [cx, cy] = key.split(',').map(Number);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const other = grid.get((cx + dx) + ',' + (cy + dy));
+      if (!other) continue;
+      for (const i of arr) for (const j of other) {
+        if (j <= i) continue;
+        let ddx = px[i] - px[j]; let ddy = py[i] - py[j];
+        let d2 = ddx * ddx + ddy * ddy;
+        if (d2 > CELL * CELL * 4) continue;
+        if (d2 < 1) { ddx = (hash01(String(i)) - 0.5) * 2; ddy = (hash01(String(j)) - 0.5) * 2; d2 = 1; }
+        // Nodes from different modules push each other apart harder than siblings do. This
+        // is the other half of making enclosure work: without it every territory overlaps
+        // every other one and a hull is just another line through the knot.
+        let f = 6400 / Math.max(d2, 25);
+        if (f > 14) f = 14;
+        f *= rootOf[i] === rootOf[j] ? 0.85 : 1.6;
+        const d = Math.sqrt(d2);
+        const ux = ddx / d; const uy = ddy / d;
+        fx[i] += ux * f; fy[i] += uy * f;
+        fx[j] -= ux * f; fy[j] -= uy * f;
+      }
+    }
+  }
+  // Territory separation: whole modules push each other apart, which is the only force with
+  // the reach to keep the map divided into regions you can actually name.
+  if (G) {
+    gcx.fill(0); gcy.fill(0); gcn.fill(0); gpush.fill(0);
+    for (let i = 0; i < N; i++) {
+      const g = groupOf[i];
+      if (g < 0 || !visible[i]) continue;
+      gcx[g] += px[i]; gcy[g] += py[i]; gcn[g]++;
+    }
+    for (let g = 0; g < G; g++) {
+      if (!gcn[g]) continue;
+      gcx[g] /= gcn[g]; gcy[g] /= gcn[g];
+      gcr[g] = 40 + Math.sqrt(gcn[g]) * 26;
+    }
+    for (let a = 0; a < G; a++) {
+      if (!gcn[a]) continue;
+      for (let b = a + 1; b < G; b++) {
+        if (!gcn[b]) continue;
+        const dx = gcx[a] - gcx[b]; const dy = gcy[a] - gcy[b];
+        const d = Math.hypot(dx, dy) || 0.01;
+        const want = gcr[a] + gcr[b];
+        if (d >= want) continue;
+        const f = (want - d) * 0.05;
+        const ux = dx / d; const uy = dy / d;
+        gpush[a * 2] += ux * f; gpush[a * 2 + 1] += uy * f;
+        gpush[b * 2] -= ux * f; gpush[b * 2 + 1] -= uy * f;
+      }
+    }
+    for (let i = 0; i < N; i++) {
+      const g = groupOf[i];
+      if (g < 0 || !visible[i]) continue;
+      fx[i] += gpush[g * 2]; fy[i] += gpush[g * 2 + 1];
+    }
+  }
+
+  for (const [a, b, rest, k] of springs) {
+    if (!visible[a] || !visible[b]) continue;
+    const dx = px[b] - px[a]; const dy = py[b] - py[a];
+    const d = Math.hypot(dx, dy) || 0.01;
+    const f = k * (d - rest);
+    const ux = (dx / d) * f; const uy = (dy / d) * f;
+    fx[a] += ux; fy[a] += uy; fx[b] -= ux; fy[b] -= uy;
+  }
+  for (let i = 0; i < N; i++) {
+    if (!visible[i] || i === pinned) continue;
+    // Light: strong centre gravity fights the territory separation below and collapses the
+    // ring of modules back into one pile.
+    fx[i] -= px[i] * 0.0014; fy[i] -= py[i] * 0.0014;
+    vx[i] = (vx[i] + fx[i] * alpha) * 0.85;
+    vy[i] = (vy[i] + fy[i] * alpha) * 0.85;
+    const sp = Math.hypot(vx[i], vy[i]);
+    if (sp > 12) { vx[i] *= 12 / sp; vy[i] *= 12 / sp; }
+    px[i] += vx[i]; py[i] += vy[i];
+  }
+  alpha *= 0.995;
+}
+
+// Flow layout: layered DAG, entrypoints on the left, dependencies flowing right.
+const flowX = new Float32Array(N); const flowY = new Float32Array(N);
+const layerOf = new Int16Array(N).fill(-1);
+const backEdges = new Set();
+let layerRows = [];
+let layerBlocks = [];
+const FLOW_COLW = 232;
+
+function computeFlowLayout() {
+  const members = [];
+  for (let i = 0; i < N; i++) if (inFlow[i]) members.push(i);
+  if (!members.length) return;
+
+  // 1. break cycles with an iterative DFS so layering has a DAG to work on
+  const color = new Uint8Array(N);
+  const onStack = new Uint8Array(N);
+  for (const start of members) {
+    if (color[start]) continue;
+    const stack = [[start, 0]];
+    color[start] = 1; onStack[start] = 1;
+    while (stack.length) {
+      const frame = stack[stack.length - 1];
+      const kids = flowOut[frame[0]];
+      if (frame[1] < kids.length) {
+        const nx = kids[frame[1]++];
+        if (onStack[nx]) { backEdges.add(frame[0] + '>' + nx); continue; }
+        if (color[nx]) continue;
+        color[nx] = 1; onStack[nx] = 1; stack.push([nx, 0]);
+      } else { onStack[frame[0]] = 0; stack.pop(); }
+    }
+  }
+  const fwd = (i) => flowOut[i].filter((j) => !backEdges.has(i + '>' + j));
+  const bwd = (i) => flowIn[i].filter((j) => !backEdges.has(j + '>' + i));
+
+  // 2. longest-path layering from roots
+  const indeg = new Map(members.map((i) => [i, bwd(i).length]));
+  const queue = members.filter((i) => indeg.get(i) === 0);
+  for (const i of members) layerOf[i] = 0;
+  const order = [];
+  for (let qi = 0; qi < queue.length; qi++) {
+    const cur = queue[qi];
+    order.push(cur);
+    for (const nx of fwd(cur)) {
+      if (layerOf[nx] < layerOf[cur] + 1) layerOf[nx] = layerOf[cur] + 1;
+      indeg.set(nx, indeg.get(nx) - 1);
+      if (indeg.get(nx) === 0) queue.push(nx);
+    }
+  }
+  for (const i of members) if (layerOf[i] < 0) layerOf[i] = 0;
+
+  // 3. barycenter ordering, four sweeps
+  const maxLayer = Math.max(...members.map((i) => layerOf[i]));
+  layerRows = Array.from({ length: maxLayer + 1 }, () => []);
+  for (const i of members) layerRows[layerOf[i]].push(i);
+  for (const rows of layerRows) rows.sort((a, b) => nodes[a].k.localeCompare(nodes[b].k));
+  const pos = new Float32Array(N);
+  const reindex = () => layerRows.forEach((rows) => rows.forEach((i, k) => { pos[i] = k; }));
+  reindex();
+  for (let sweep = 0; sweep < 4; sweep++) {
+    const down = sweep % 2 === 0;
+    const range = down ? [...layerRows.keys()] : [...layerRows.keys()].reverse();
+    for (const L of range) {
+      const neighbours = down ? bwd : fwd;
+      layerRows[L].sort((a, b) => {
+        const ba = bary(a, neighbours, pos); const bb = bary(b, neighbours, pos);
+        return ba - bb || nodes[a].k.localeCompare(nodes[b].k);
+      });
+      reindex();
+    }
+  }
+  // Group each layer into module blocks -- same-module rows were already adjacent, but with
+  // nothing drawn around them a run of eight rows from kernel/ looked like eight unrelated
+  // ones. Tests get a block of their own: a test file has no importers, so longest-path
+  // layering files it under "entry points" beside src/index.ts. 19 of the 46 roots on the
+  // reference repo were tests, which makes that column a lie about where the program starts.
+  const TESTS = '\u0000tests';
+  const blockKey = (i) => (isTestPath(nodes[i].k) ? TESTS : dirOf(nodes[i].k));
+  layerBlocks = layerRows.map((rows) => {
+    const groups = new Map();
+    rows.forEach((i, k) => {
+      const m = blockKey(i);
+      if (!groups.has(m)) groups.set(m, { key: m, label: m === TESTS ? 'tests' : m, first: k, items: [] });
+      groups.get(m).items.push(i);
+    });
+    return [...groups.values()].sort((a, b) =>
+      (a.key === TESTS ? 1 : 0) - (b.key === TESTS ? 1 : 0) || a.first - b.first);
+  });
+
+  const ROWH = 24; const BLOCK_GAP = 26;   // room for the block's own label above it
+  flowBottom = 0;
+  layerBlocks.forEach((blocks, L) => {
+    let h = -BLOCK_GAP;
+    for (const b of blocks) h += b.items.length * ROWH + BLOCK_GAP;
+    let y = -h / 2;
+    for (const b of blocks) {
+      b.y0 = y - 5;
+      b.items.forEach((i, k) => { flowX[i] = L * FLOW_COLW; flowY[i] = y + k * ROWH + ROWH / 2; });
+      y += b.items.length * ROWH;
+      b.y1 = y + 5;
+      y += BLOCK_GAP;
+      if (b.y1 > flowBottom) flowBottom = b.y1;
+    }
+    layerRows[L] = blocks.flatMap((b) => b.items);
+  });
+
+  // Pill widths and edge ports. 29 import edges converged on the single centre pixel of
+  // server.py, which reads as one thick line rather than 29 dependents; giving every edge its
+  // own slot on the pill's edge, ordered by where its far end sits, un-crosses most of them.
+  ctx.font = '11px ui-sans-serif, system-ui';
+  for (const i of members) pillW[i] = Math.min(200, ctx.measureText(labelOf(i)).width + 18);
+
+  portOutOf = new Float32Array(edges.length);
+  portInOf = new Float32Array(edges.length);
+  const outs = new Map(); const ins = new Map();
+  for (const e of edges) {
+    if (!FLOW_TYPES.has(e.type)) continue;
+    if (!FLOW_NODE_TYPES.has(nodes[e.a].t) || !FLOW_NODE_TYPES.has(nodes[e.b].t)) continue;
+    if (!outs.has(e.a)) outs.set(e.a, []);
+    outs.get(e.a).push(e);
+    if (!ins.has(e.b)) ins.set(e.b, []);
+    ins.get(e.b).push(e);
+  }
+  for (const [, arr] of outs) {
+    arr.sort((p, q) => flowY[p.b] - flowY[q.b]);
+    arr.forEach((e, k) => { portOutOf[e.ei] = arr.length === 1 ? 0 : (k / (arr.length - 1)) * 2 - 1; });
+  }
+  for (const [, arr] of ins) {
+    arr.sort((p, q) => flowY[p.a] - flowY[q.a]);
+    arr.forEach((e, k) => { portInOf[e.ei] = arr.length === 1 ? 0 : (k / (arr.length - 1)) * 2 - 1; });
+  }
+}
+
+function bary(i, neighbours, pos) {
+  const ns = neighbours(i);
+  if (!ns.length) return pos[i];
+  let s = 0;
+  for (const n of ns) s += pos[n];
+  return s / ns.length;
+}
+function dirOf(k) { return k.includes('/') ? k.slice(0, k.lastIndexOf('/')) : '.'; }
+
+// ---------------------------------------------------------------- render
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W = 0; let H = 0; let dpr = 1;
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  const stage = document.getElementById('stage');
+  // clientWidth can still be 0 on the first frame, before flex layout settles; falling back to
+  // the stage and then the window keeps fit() from clamping to minimum zoom on load.
+  W = canvas.clientWidth || stage.clientWidth || window.innerWidth - 560;
+  H = canvas.clientHeight || stage.clientHeight || window.innerHeight - 50;
+  canvas.width = Math.floor(W * dpr); canvas.height = Math.floor(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+// The stage narrows when the detail panel opens. Shift the transform by half the delta so the
+// world point under the centre stays put instead of the whole graph appearing to jump sideways.
+function reflow() {
+  const oldW = W; const oldH = H;
+  resize();
+  if (oldW) { state.tx += (W - oldW) / 2; state.ty += (H - oldH) / 2; }
+  draw();
+}
+window.addEventListener('resize', reflow);
+if (window.ResizeObserver) new ResizeObserver(reflow).observe(document.getElementById('stage'));
+
+// Shared-element flight: switching tabs interpolates every node from its force-layout seat
+// to its lane seat, so you can watch a node travel to its layer instead of the whole picture
+// cutting to a different one.
+function X(i) {
+  const t = motion.flight;
+  if (t >= 1 || !inFlow[i]) return state.view === 'flow' ? flowX[i] : px[i];
+  const from = motion.flightFrom === 'flow' ? flowX[i] : px[i];
+  const to = state.view === 'flow' ? flowX[i] : px[i];
+  return from + (to - from) * t;
+}
+function Y(i) {
+  const t = motion.flight;
+  if (t >= 1 || !inFlow[i]) return state.view === 'flow' ? flowY[i] : py[i];
+  const from = motion.flightFrom === 'flow' ? flowY[i] : py[i];
+  const to = state.view === 'flow' ? flowY[i] : py[i];
+  return from + (to - from) * t;
+}
+
+// sqrt, not linear and not `w`. Degree runs 0..173 on the reference graph: linear sizing is
+// an 87:1 radius ratio and one node eats the screen, while the old `w` put 65% of nodes in
+// a 1.3px band. sqrt lands on ~7:1 -- the hub reads as the hub, a leaf is still clickable.
+const R_MIN = 3.4;
+const R_K = 1.55;
+function radius(i) {
+  const base = R_MIN + Math.sqrt(deg[i]) * R_K;
+  const t = nodes[i].t;
+  if (t === 'mod') return Math.max(9, base * 1.15);
+  if (t === 'issue') return Math.max(6.5, base);
+  return base;
+}
+
+// Semantic zoom. Containment depth picks the zoom band a tier fades in over -- modules are
+// always up, files arrive as the territory resolves, symbols last. This is purely a render
+// and hit-test concern: `visible` still drives the simulation, so zooming never relayouts.
+const LOD_BANDS = [[0, 0], [0.30, 0.55], [0.62, 1.05]];
+function lodAlpha(i) {
+  if (!state.lod || state.view === 'flow') return 1;
+  const band = LOD_BANDS[tierOf(i)];
+  if (!band[1]) return 1;
+  const a = (state.scale - band[0]) / (band[1] - band[0]);
+  return a <= 0 ? 0 : a >= 1 ? 1 : a;
+}
+// What the far view shows instead of the nodes it has faded out.
+const lodTier = () => (state.scale < LOD_BANDS[1][1] ? 'module' : state.scale < LOD_BANDS[2][1] ? 'file' : 'symbol');
+
+// ---- geometry -------------------------------------------------------------
+// Enclosure, not connection. part-of is 49% of the edge list (1107 of 2258) and as a line it
+// says nothing a hull does not say better, so the lines are gone and every file and module is
+// drawn as the hull of what it contains. The padding is free: stroking the hull path with a
+// fat round-joined line inflates it by half the line width on every side, so there is no
+// offset-polygon geometry to get wrong and no blob library to carry.
+function convexHull(pts) {
+  if (pts.length < 3) return pts;
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [];
+  for (const q of p) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop();
+    lower.push(q);
+  }
+  const upper = [];
+  for (let i = p.length - 1; i >= 0; i--) {
+    const q = p[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop();
+    upper.push(q);
+  }
+  lower.pop(); upper.pop();
+  return lower.concat(upper);
+}
+
+// Corner-cutting through edge midpoints: the hull's straight runs stay, its vertices round
+// off. One pass is enough to read as "soft territory" rather than "polygon".
+function traceHull(h) {
+  ctx.beginPath();
+  if (h.length === 1) { ctx.arc(h[0][0], h[0][1], 0.5, 0, Math.PI * 2); return; }
+  if (h.length === 2) { ctx.moveTo(h[0][0], h[0][1]); ctx.lineTo(h[1][0], h[1][1]); return; }
+  const mx = (a, b) => (a + b) / 2;
+  const last = h[h.length - 1];
+  ctx.moveTo(mx(last[0], h[0][0]), mx(last[1], h[0][1]));
+  for (let i = 0; i < h.length; i++) {
+    const cur = h[i];
+    const nxt = h[(i + 1) % h.length];
+    ctx.quadraticCurveTo(cur[0], cur[1], mx(cur[0], nxt[0]), mx(cur[1], nxt[1]));
+  }
+  ctx.closePath();
+}
+
+function collectPts(g, depthLimit) {
+  const out = [];
+  const stack = [[g, 0]];
+  while (stack.length) {
+    const [c, d] = stack.pop();
+    // `visible` only -- a node hidden by a filter is genuinely not part of this territory,
+    // but one merely faded by zoom still is, and the hull is what represents it.
+    if (visible[c]) out.push([X(c), Y(c)]);
+    if (d >= depthLimit) continue;
+    for (const k of childrenOf[c]) stack.push([k, d + 1]);
+  }
+  return out;
+}
+
+// Territory tint. A muted fixed-saturation hue per module key -- distinguishable enough to
+// separate neighbours at 8% alpha, far enough from the saturated node palette that nobody
+// reads it as a category.
+const hullHue = new Map();
+function moduleTint(k) {
+  if (!hullHue.has(k)) hullHue.set(k, 'hsl(' + Math.round(hash01(k + '~') * 360) + ', 46%, 56%)');
+  return hullHue.get(k);
+}
+
+function drawHulls() {
+  const zoom = state.scale;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // Files first so a module's tint sits under, not over, the files it holds.
+  for (const kind of ['mod', 'file']) {
+    for (let i = 0; i < N; i++) {
+      if (nodes[i].t !== kind || !childrenOf[i].length) continue;
+      const a = lodAlpha(i);
+      if (a < 0.04) continue;
+      const pts = collectPts(i, kind === 'mod' ? 3 : 1);
+      if (pts.length < 2) continue;
+      const h = convexHull(pts);
+      const pad = (kind === 'mod' ? 26 : 13) + (kind === 'mod' ? 0 : 0);
+      const tint = kind === 'mod' ? moduleTint(nodes[i].k) : TYPE_COLOR.file;
+      const dim = state.selected !== null && !lit[i] ? 0.45 : 1;
+      traceHull(h);
+      ctx.strokeStyle = tint;
+      ctx.lineWidth = pad * 2;
+      ctx.globalAlpha = (kind === 'mod' ? 0.075 : 0.055) * a * dim;
+      ctx.stroke();
+      ctx.fillStyle = tint;
+      ctx.globalAlpha = (kind === 'mod' ? 0.055 : 0.04) * a * dim;
+      ctx.fill();
+      // A hairline edge keeps the territory from dissolving once several overlap.
+      if (kind === 'mod') {
+        ctx.globalAlpha = 0.18 * a * dim;
+        ctx.lineWidth = 1.2 / zoom;
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Module names ride on their own territory, and only while the module tier is the one you
+// are reading -- once symbols resolve, the name would just be another thing in the way.
+function drawHullLabels() {
+  const zoom = state.scale;
+  const fade = 1 - Math.min(1, Math.max(0, (zoom - 0.75) / 0.6));
+  if (fade < 0.05) return;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  // Constant on-screen size, so the name of a territory stays as readable zoomed out as in.
+  const size = Math.max(11, Math.min(110, 14 / zoom));
+  // Biggest territory wins a collision -- a small module losing its name to a large one is
+  // the right trade, and two names printed over each other loses both.
+  const mods = [];
+  for (let i = 0; i < N; i++) {
+    if (nodes[i].t !== 'mod' || !childrenOf[i].length || !visible[i]) continue;
+    const pts = collectPts(i, 3);
+    if (pts.length < 2) continue;
+    mods.push([i, pts]);
+  }
+  mods.sort((a, b) => b[1].length - a[1].length);
+  const taken = [];
+  for (const [i, pts] of mods) {
+    let sx = 0; let sy = 0; let top = Infinity;
+    for (const p of pts) { sx += p[0]; sy += p[1]; if (p[1] < top) top = p[1]; }
+    const x = sx / pts.length;
+    const y = Math.min(sy / pts.length, top + size * 1.4);
+    const label = nodes[i].k.slice(nodes[i].k.lastIndexOf('/') + 1) || nodes[i].k;
+    ctx.font = '650 ' + size + 'px ui-sans-serif, system-ui';
+    const w = ctx.measureText(label).width;
+    const box = [x - w / 2, y - size * 0.7, x + w / 2, y + size * 1.7];
+    let hit = false;
+    for (const t of taken) {
+      if (box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1]) { hit = true; break; }
+    }
+    if (hit) continue;
+    taken.push(box);
+    ctx.globalAlpha = 0.9 * fade;
+    ctx.strokeStyle = cssVar('--bg'); ctx.lineWidth = 4 / zoom; ctx.lineJoin = 'round';
+    ctx.strokeText(label, x, y);
+    ctx.fillStyle = moduleTint(nodes[i].k);
+    ctx.fillText(label, x, y);
+    ctx.globalAlpha = 0.55 * fade;
+    ctx.font = (size * 0.66) + 'px ui-sans-serif, system-ui';
+    ctx.fillStyle = cssVar('--fg2');
+    ctx.strokeText(moduleStat(i), x, y + size);
+    ctx.fillText(moduleStat(i), x, y + size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Zoomed out a module is a container, so it has to carry the numbers you would otherwise
+// have to zoom in and count: how much it holds, how much of it is in flight.
+const modStatCache = new Map();
+function moduleStat(i) {
+  if (modStatCache.has(i)) return modStatCache.get(i);
+  let files = 0; let syms = 0; let work = 0;
+  const stack = [i];
+  while (stack.length) {
+    const c = stack.pop();
+    for (const k of childrenOf[c]) {
+      if (nodes[k].t === 'sym') syms++;
+      else { files++; if (gitOf[k] && gitOf[k] !== 'pushed') work++; }
+      stack.push(k);
+    }
+  }
+  const s = files + ' files · ' + syms + ' symbols' + (work ? ' · ' + work + ' in flight' : '');
+  modStatCache.set(i, s);
+  return s;
+}
+
+// Load choreography: the territory arrives before the things inside it -- the same order
+// semantic zoom uses, so the first second of the page teaches the interaction for free.
+function settleAlpha(i) {
+  if (motion.settle >= 1) return 1;
+  const t = motion.settle * 1.55 - tierOf(i) * 0.24;
+  return t <= 0 ? 0 : t >= 1 ? 1 : easeOut(t);
+}
+
+function nodePath(shape, x, y, r) {
+  ctx.beginPath();
+  if (shape === 'square') { const s = r * 0.86; ctx.rect(x - s, y - s, s * 2, s * 2); return; }
+  if (shape === 'diamond') {
+    ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); return;
+  }
+  if (shape === 'triangle') {
+    const s = r * 1.16;
+    ctx.moveTo(x, y - s); ctx.lineTo(x + s * 0.87, y + s * 0.56); ctx.lineTo(x - s * 0.87, y + s * 0.56);
+    ctx.closePath(); return;
+  }
+  if (shape === 'hexagon') {
+    for (let k = 0; k < 6; k++) {
+      const a = (Math.PI / 3) * k - Math.PI / 6;
+      const vxp = x + Math.cos(a) * r; const vyp = y + Math.sin(a) * r;
+      if (k === 0) ctx.moveTo(vxp, vyp); else ctx.lineTo(vxp, vyp);
+    }
+    ctx.closePath(); return;
+  }
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+}
+
+// ---- ripple ---------------------------------------------------------------
+const RIPPLE_HOPS_PER_SEC = 2.6;
+// How far the wave has travelled, in hops. Everything nearer is already lit; the node the
+// front is passing right now flashes.
+function rippleAt(i) {
+  if (!state.impact || state.selected === null || hopOf[i] < 0) return { on: 1, pulse: 0 };
+  if (motion.ripple === Infinity) return { on: 1, pulse: 0 };
+  if (motion.ripple < 0) return { on: 1, pulse: 0 };
+  const d = motion.ripple * RIPPLE_HOPS_PER_SEC - hopOf[i];
+  if (d < 0) return { on: 0, pulse: 0 };
+  return { on: Math.min(1, 0.25 + d * 2), pulse: Math.max(0, 1 - d * 1.4) };
+}
+
+// Blast radius, drawn as the thing it is: one ring per hop, sized to enclose everything that
+// far out. A flat amber wash could not tell 1 hop from 9; this can, and it labels the count.
+function drawHopRings() {
+  if (!state.impact || state.selected === null) return;
+  const sel = state.selected;
+  const far = Math.min(motion.rippleFar, 12);
+  if (far < 1) return;
+  const cxs = X(sel); const cys = Y(sel);
+  const rad = new Float64Array(far + 1);
+  const cnt = new Int32Array(far + 1);
+  for (let i = 0; i < N; i++) {
+    if (lit[i] !== 2 || hopOf[i] < 1 || hopOf[i] > far || !visible[i]) continue;
+    cnt[hopOf[i]]++;
+    const d = Math.hypot(X(i) - cxs, Y(i) - cys);
+    if (d > rad[hopOf[i]]) rad[hopOf[i]] = d;
+  }
+  for (let h = 2; h <= far; h++) rad[h] = Math.max(rad[h], rad[h - 1]);
+  const zoom = state.scale;
+  const front = motion.ripple === Infinity ? 99 : motion.ripple * RIPPLE_HOPS_PER_SEC;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  for (let h = 1; h <= far; h++) {
+    if (!cnt[h] || rad[h] < 1) continue;
+    const rev = Math.min(1, Math.max(0, front - h + 1));
+    if (rev <= 0) continue;
+    ctx.beginPath(); ctx.arc(cxs, cys, rad[h] + 10, 0, Math.PI * 2);
+    ctx.strokeStyle = HOP_COLOR(h);
+    ctx.lineWidth = (Math.abs(front - h) < 0.6 ? 2.6 : 1.1) / zoom;
+    ctx.globalAlpha = 0.4 * rev;
+    ctx.setLineDash([6 / zoom, 5 / zoom]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 0.85 * rev;
+    ctx.font = (11 / zoom) + 'px ui-sans-serif, system-ui';
+    ctx.fillStyle = HOP_COLOR(h);
+    ctx.fillText(h + ' hop · ' + cnt[h], cxs, cys - rad[h] - 14 / zoom);
+  }
+  ctx.globalAlpha = 1;
+}
+// Hop 1 is the thing you will actually break today; hop 9 is trivia. The ramp says so.
+function HOP_COLOR(h) {
+  const t = Math.min(1, (h - 1) / 5);
+  const r = Math.round(240 - t * 70);
+  const g = Math.round(120 + t * 40);
+  const b = Math.round(40 + t * 130);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  ctx.translate(state.tx, state.ty);
+  ctx.scale(state.scale, state.scale);
+
+  const dimming = state.search.trim() !== '' || state.selected !== null || state.work;
+  const zoom = state.scale;
+
+  if (state.view === 'flow') drawLaneBands();
+  else if (state.hulls) drawHulls();
+  drawHopRings();
+
+  // edges. Bucketed by kind and by a coarse LOD alpha so a symbol's call lines fade in with
+  // the symbols themselves instead of hanging in space above an empty file.
+  ctx.lineWidth = 1 / zoom;
+  const groups = new Map();
+  for (const e of edges) {
+    if (!visible[e.a] || !visible[e.b]) continue;
+    if (state.view === 'flow' && !FLOW_TYPES.has(e.type)) continue;
+    // Containment is the hull now. Its spring still runs -- that is what pulls a file's
+    // symbols into a clump -- but the line is gone.
+    if (state.view === 'graph' && state.hulls && CONTAIN_TYPES.has(e.type)) continue;
+    if (!state.edgeKinds.has(edgeKindOf(e.type))) continue;
+    const la = Math.min(lodAlpha(e.a), lodAlpha(e.b));
+    if (la < 0.03) continue;
+    const hot = state.selected !== null && (lit[e.a] && lit[e.b]);
+    const back = state.view === 'flow' && backEdges.has(e.a + '>' + e.b);
+    const kind = e.type === 'blocks' ? 'blocks' : back ? 'back' : hot ? 'hot' : edgeKindOf(e.type);
+    const bucket = hot || back || kind === 'blocks' ? 4 : Math.max(1, Math.ceil(la * 4));
+    const key = kind + '|' + bucket;
+    let arr = groups.get(key);
+    if (!arr) { arr = []; groups.set(key, arr); }
+    arr.push(e);
+  }
+  const style = {
+    // These are the colours the sidebar swatches promise. They used to promise blue and amber
+    // while the canvas drew everything the same grey.
+    structural: { color: EKIND_COLOR.structural, alpha: dimming ? 0.16 : 0.42, dash: [] },
+    editorial: { color: EKIND_COLOR.editorial, alpha: dimming ? 0.12 : 0.3, dash: [3 / zoom, 3 / zoom] },
+    hot: { color: cssVar('--edge-hi'), alpha: 0.9, dash: [] },
+    blocks: { color: '#e05252', alpha: 0.9, dash: [5 / zoom, 4 / zoom] },
+    back: { color: '#e05252', alpha: 0.55, dash: [4 / zoom, 4 / zoom] },
+  };
+  const order = ['structural', 'editorial', 'back', 'hot', 'blocks'];
+  for (const key of [...groups.keys()].sort((a, b) => order.indexOf(a.split('|')[0]) - order.indexOf(b.split('|')[0]))) {
+    const arr = groups.get(key);
+    const [kind, bucket] = key.split('|');
+    const st = style[kind];
+    ctx.strokeStyle = st.color;
+    ctx.globalAlpha = st.alpha * (Number(bucket) / 4);
+    ctx.setLineDash(kind === 'hot' && state.view === 'flow' ? [7 / zoom, 5 / zoom] : st.dash);
+    // Marching ants along the selected path: direction you can see rather than infer.
+    ctx.lineDashOffset = kind === 'hot' && state.view === 'flow' ? -motion.dash / zoom : 0;
+    ctx.lineWidth = (kind === 'hot' ? 1.9 : 1) / zoom;
+    ctx.beginPath();
+    for (const e of arr) drawEdgePath(e, kind === 'back');
+    ctx.stroke();
+    if (kind === 'blocks' || kind === 'hot') {
+      for (const e of arr) {
+        const [, , x2, y2, ax, ay] = edgeEnds(e, kind === 'back');
+        arrowHead(ax, ay, x2, y2, st.color, zoom);
+      }
+    }
+  }
+  ctx.setLineDash([]); ctx.lineDashOffset = 0; ctx.globalAlpha = 1;
+
+  // A return loop needs to say so. Without the mark, a curve running under the lanes reads as
+  // a stray line rather than as the import cycle it is.
+  if (state.view === 'flow' && motion.flight >= 1 && zoom > 0.35) {
+    ctx.font = (11 / zoom) + 'px ui-sans-serif, system-ui';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (const e of edges) {
+      if (!visible[e.a] || !visible[e.b] || !backEdges.has(e.a + '>' + e.b)) continue;
+      if (!FLOW_TYPES.has(e.type)) continue;
+      const [x1, y1, x2, y2] = edgeEnds(e, true);
+      const dip = flowBottom + 34 + (Math.abs(x1 - x2) % 90) * 0.5;
+      const my = (y1 + y2) / 8 + 0.75 * dip;
+      ctx.globalAlpha = 0.9;
+      ctx.strokeStyle = cssVar('--bg'); ctx.lineWidth = 4 / zoom; ctx.lineJoin = 'round';
+      ctx.strokeText('↩ cycle', (x1 + x2) / 2, my);
+      ctx.fillStyle = '#e05252';
+      ctx.fillText('↩ cycle', (x1 + x2) / 2, my);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // nodes
+  const flowPills = state.view === 'flow' && motion.flight >= 1;
+  for (let i = 0; i < N; i++) {
+    if (!visible[i]) continue;
+    const n = nodes[i];
+    const lod = lodAlpha(i);
+    const rip = rippleAt(i);
+    if (lod < 0.02 || rip.on <= 0) continue;
+    const x = X(i); const y = Y(i); const r = radius(i);
+    let a = lod * rip.on * settleAlpha(i);
+    if (state.search.trim() && !matched[i]) a *= 0.12;
+    else if (state.selected !== null && !lit[i]) a *= state.impact || state.view === 'flow' ? 0.1 : 0.22;
+    if (state.spotlight && n.t !== state.spotlight) a *= 0.08;
+    // A node with no seat in the flow layout fades rather than teleporting to the origin.
+    if (!inFlow[i]) a *= state.view === 'flow' ? 1 - motion.flight : motion.flight;
+    if (a <= 0.004) continue;
+    ctx.globalAlpha = a;
+
+    if (flowPills) { drawFlowPill(i, x, y, a); continue; }
+
+    let fill = TYPE_COLOR[n.t] || '#888';
+    const shape = TYPE_SHAPE[n.t] || 'circle';
+    if (n.t === 'issue') {
+      const iss = issueOf[i];
+      fill = iss && iss.state === 'closed' ? '#6b7885' : '#3fb950';
+      if (iss && iss.frontier) { ctx.shadowColor = '#3fb950'; ctx.shadowBlur = 16 / zoom; }
+      nodePath('hexagon', x, y, r + 1.5); ctx.fillStyle = fill; ctx.fill(); ctx.shadowBlur = 0;
+      if (iss && iss.openBlockedBy && iss.openBlockedBy.length) {
+        ctx.strokeStyle = '#e05252'; ctx.lineWidth = 2 / zoom; nodePath('hexagon', x, y, r + 4); ctx.stroke();
+      }
+    } else {
+      // In impact mode the colour is the hop count, not a flat amber -- one hop and nine hops
+      // used to be the same shade of "affected", which is the whole answer thrown away.
+      if (state.impact && lit[i] === 2) {
+        ctx.shadowColor = HOP_COLOR(hopOf[i]);
+        ctx.shadowBlur = (10 + rip.pulse * 26) / zoom;
+        fill = HOP_COLOR(hopOf[i]);
+      }
+      // Provenance, on the node instead of buried in a facet: solid = both tools saw it,
+      // outlined = only one, and the outline is dashed when that one was the symbols engine. Shape and
+      // fill, not a fourth colour table nobody can hold in their head.
+      const src = n.src;
+      nodePath(shape, x, y, r);
+      if (src && src !== 'both') {
+        ctx.fillStyle = fill; ctx.globalAlpha = a * 0.22; ctx.fill();
+        ctx.globalAlpha = a;
+        ctx.strokeStyle = fill; ctx.lineWidth = Math.max(1.2, r * 0.28) / 1;
+        ctx.setLineDash(src === 'symbols' ? [3 / zoom, 2.4 / zoom] : []);
+        ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        ctx.fillStyle = fill; ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    }
+
+    const g = gitOf[i];
+    if (g && GIT_COLOR[g]) {
+      ctx.strokeStyle = GIT_COLOR[g];
+      ctx.lineWidth = 1.8 / zoom;
+      ctx.setLineDash(g === 'untracked' ? [2.5 / zoom, 2.5 / zoom] : []);
+      ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.stroke();
+      if (g === 'modified') { ctx.beginPath(); ctx.arc(x, y, r + 5.5, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.setLineDash([]);
+    }
+    if (n.st === 'stale') {
+      ctx.strokeStyle = cssVar('--warn'); ctx.lineWidth = 1 / zoom;
+      ctx.beginPath();
+      ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r);
+      ctx.moveTo(x - r, y + r); ctx.lineTo(x + r, y - r);
+      ctx.stroke();
+    }
+    if (i === state.selected) {
+      ctx.strokeStyle = cssVar('--accent'); ctx.lineWidth = 2.5 / zoom;
+      ctx.beginPath(); ctx.arc(x, y, r + 8, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (seqOf[i] > 0 && state.view === 'flow') {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = cssVar('--accent');
+      ctx.beginPath(); ctx.arc(x - r - 9, y - r - 5, 7 / Math.max(1, zoom * 0.8), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = `${9 / Math.max(1, zoom * 0.8)}px ui-sans-serif, system-ui`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(seqOf[i]), x - r - 9, y - r - 5);
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Labels, occlusion-aware. Candidates are ranked by degree and each one reserves a box; a
+  // label that would land on a box already taken is dropped rather than overprinted, so the
+  // hub always keeps its name and the hairball stops printing mush. Halo text over the
+  // background colour keeps a name readable where it crosses an edge or a hull.
+  if (zoom > 0.3 && !flowPills) {
+    const size = 11 / zoom;
+    ctx.font = size + 'px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const cand = [];
+    for (let i = 0; i < N; i++) {
+      if (!visible[i] || lodAlpha(i) < 0.5) continue;
+      if (nodes[i].t === 'mod' && state.hulls) continue;   // the hull already carries the name
+      const important = i === state.selected || i === state.hover || matched[i]
+        || nodes[i].t === 'entry' || nodes[i].t === 'issue'
+        || (state.impact && hopOf[i] === 1)
+        || (deg[i] > 3 && zoom > 0.75);
+      if (!important) continue;
+      if (state.selected !== null && !lit[i] && !matched[i]) continue;
+      if (state.search.trim() && !matched[i]) continue;
+      if (state.spotlight && nodes[i].t !== state.spotlight) continue;
+      cand.push(i);
+    }
+    cand.sort((a, b) => (b === state.selected ? 1 : 0) - (a === state.selected ? 1 : 0) || deg[b] - deg[a]);
+    const taken = [];
+    const pad = 2 / zoom;
+    for (const i of cand.slice(0, 320)) {
+      const text = labelOf(i);
+      const w = ctx.measureText(text).width;
+      const x = X(i) + radius(i) + 6 / zoom;
+      const y = Y(i);
+      const box = [x - pad, y - size * 0.62, x + w + pad, y + size * 0.62];
+      let hit = false;
+      for (const t of taken) {
+        if (box[0] < t[2] && box[2] > t[0] && box[1] < t[3] && box[3] > t[1]) { hit = true; break; }
+      }
+      if (hit && i !== state.selected && i !== state.hover) continue;
+      taken.push(box);
+      ctx.globalAlpha = Math.min(1, lodAlpha(i) * motion.settle);
+      ctx.strokeStyle = cssVar('--bg'); ctx.lineWidth = 3.2 / zoom; ctx.lineJoin = 'round';
+      ctx.strokeText(text, x, y);
+      ctx.fillStyle = i === state.selected ? cssVar('--fg') : cssVar('--fg2');
+      ctx.fillText(text, x, y);
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (state.hulls && state.view === 'graph') drawHullLabels();
+  ctx.restore();
+  // Lane headers live in screen space so they cannot collide with the rows they name.
+  if (flowPills) drawLaneHeaders();
+  drawZoomHint();
+}
+
+// ---- flow drawing ---------------------------------------------------------
+const PILL_H = 17;
+const pillW = new Float32Array(N);
+let portOutOf = new Float32Array(1);
+let portInOf = new Float32Array(1);
+let flowBottom = 0;
+
+// 29 import edges used to converge on one pixel at the centre of server.py, which reads as
+// "one thick line" rather than "29 dependents". A pill has a left and a right edge, and each
+// edge gets its own slot on it, ordered by where its far end sits.
+function edgeEnds(e, back) {
+  if (!(state.view === 'flow' && motion.flight >= 1)) {
+    return [X(e.a), Y(e.a), X(e.b), Y(e.b), X(e.a), Y(e.a)];
+  }
+  const span = PILL_H / 2 - 1.5;
+  const x1 = X(e.a) + pillW[e.a] / 2;
+  const y1 = Y(e.a) + portOutOf[e.ei] * span;
+  const x2 = X(e.b) - pillW[e.b] / 2;
+  const y2 = Y(e.b) + portInOf[e.ei] * span;
+  if (back) return [x1, y1, X(e.b) - pillW[e.b] / 2, y2, x2 - 30, y2 + 20];
+  return [x1, y1, x2, y2, (x1 + x2) / 2, y2];
+}
+
+function drawEdgePath(e, back) {
+  const [x1, y1, x2, y2] = edgeEnds(e, back);
+  if (!(state.view === 'flow' && motion.flight >= 1)) { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); return; }
+  if (back) {
+    // A cycle drawn straight back across the layers reads as noise. Drop it under the lanes
+    // and bring it home as a return loop, so the shape itself says "this goes backwards".
+    const dip = flowBottom + 34 + (Math.abs(x1 - x2) % 90) * 0.5;
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(x1 + 60, dip, x2 - 60, dip, x2, y2);
+    return;
+  }
+  const mx = (x1 + x2) / 2;
+  ctx.moveTo(x1, y1); ctx.bezierCurveTo(mx, y1, mx, y2, x2, y2);
+}
+
+function drawFlowPill(i, x, y, a) {
+  const n = nodes[i];
+  const w = pillW[i]; const h = PILL_H;
+  const zoom = state.scale;
+  const base = TYPE_COLOR[n.t] || '#888';
+  const hot = state.impact && lit[i] === 2 ? HOP_COLOR(hopOf[i]) : null;
+  ctx.beginPath();
+  const rr = h / 2;
+  ctx.moveTo(x - w / 2 + rr, y - h / 2);
+  ctx.arcTo(x + w / 2, y - h / 2, x + w / 2, y + h / 2, rr);
+  ctx.arcTo(x + w / 2, y + h / 2, x - w / 2, y + h / 2, rr);
+  ctx.arcTo(x - w / 2, y + h / 2, x - w / 2, y - h / 2, rr);
+  ctx.arcTo(x - w / 2, y - h / 2, x + w / 2, y - h / 2, rr);
+  ctx.closePath();
+  ctx.fillStyle = cssVar('--panel2'); ctx.fill();
+  ctx.globalAlpha = a * 0.9;
+  ctx.fillStyle = (hot || base) + '2e'; ctx.fill();
+  ctx.globalAlpha = a;
+  ctx.strokeStyle = hot || base;
+  ctx.lineWidth = (i === state.selected ? 2.2 : n.src && n.src !== 'both' ? 1 : 1.4) / zoom;
+  ctx.setLineDash(n.src === 'symbols' ? [3 / zoom, 2.4 / zoom] : []);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = '11px ui-sans-serif, system-ui';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = cssVar('--fg');
+  ctx.fillText(labelOf(i), x - w / 2 + 7, y + 0.5);
+  if (seqOf[i] > 0) {
+    ctx.beginPath(); ctx.arc(x - w / 2 - 7, y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = cssVar('--accent'); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '9px ui-sans-serif, system-ui';
+    ctx.textAlign = 'center'; ctx.fillText(String(seqOf[i]), x - w / 2 - 7, y + 0.5);
+  }
+}
+
+// A one-line "you are looking at modules / files / symbols" so the fade reads as a deliberate
+// altitude rather than as nodes going missing.
+function drawZoomHint() {
+  const el = document.getElementById('zoomhint');
+  if (!el) return;
+  if (state.view !== 'graph' || !state.lod) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.textContent = lodTier() === 'module' ? 'modules · zoom in for files'
+    : lodTier() === 'file' ? 'files · zoom in for symbols' : 'symbols';
+}
+
+function laneLabel(L) {
+  if (L === 0) return 'entry points';
+  if (L === layerBlocks.length - 1) return 'leaves';
+  return 'depth ' + L;
+}
+
+// The lane background, plus a block per module inside it. No text sits here any more -- world
+// space is where the rows are, and a header drawn in it lands on top of a neighbouring row.
+function drawLaneBands() {
+  if (!layerBlocks.length) return;
+  const zoom = state.scale;
+  layerBlocks.forEach((blocks, L) => {
+    const x = L * FLOW_COLW;
+    let top = Infinity; let bot = -Infinity;
+    for (const b of blocks) {
+      if (!b.items.some((i) => visible[i])) continue;
+      if (b.y0 < top) top = b.y0;
+      if (b.y1 > bot) bot = b.y1;
+    }
+    if (!isFinite(top)) return;
+    ctx.fillStyle = L % 2 ? 'rgba(127,140,160,.04)' : 'rgba(127,140,160,.08)';
+    ctx.fillRect(x - FLOW_COLW / 2 + 4, top - 16, FLOW_COLW - 8, bot - top + 32);
+    ctx.font = Math.min(14, 10 / Math.max(0.6, zoom)) + 'px ui-sans-serif, system-ui';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    for (const b of blocks) {
+      const shown = b.items.filter((i) => visible[i]);
+      if (!shown.length) continue;
+      const left = x - FLOW_COLW / 2 + 10;
+      const w = FLOW_COLW - 20;
+      ctx.fillStyle = b.key === '\u0000tests' ? 'rgba(224,138,46,.07)' : 'rgba(127,140,160,.07)';
+      ctx.fillRect(left, b.y0, w, b.y1 - b.y0);
+      ctx.strokeStyle = b.key === '\u0000tests' ? 'rgba(224,138,46,.30)' : cssVar('--line');
+      ctx.lineWidth = 1 / zoom;
+      ctx.strokeRect(left, b.y0, w, b.y1 - b.y0);
+      if (zoom > 0.4) {
+        ctx.fillStyle = b.key === '\u0000tests' ? '#e08a2e' : cssVar('--fg3');
+        ctx.fillText(b.label + ' · ' + shown.length, left + 1, b.y0 - 2 / zoom);
+      }
+    }
+  });
+}
+
+// Lane headers, in screen space. They used to be drawn in world space above the tallest row
+// of their own column, which put them squarely on top of the rows of every taller neighbour.
+// Pinned to the top of the viewport they scroll sideways with the columns and never collide.
+function drawLaneHeaders() {
+  if (!layerBlocks.length) return;
+  ctx.save();
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = 0.88;
+  ctx.fillStyle = cssVar('--panel');
+  ctx.fillRect(0, 0, W, 28);
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = cssVar('--line'); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, 28.5); ctx.lineTo(W, 28.5); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  layerBlocks.forEach((blocks, L) => {
+    let shown = 0;
+    let tests = 0;
+    for (const b of blocks) {
+      const s = b.items.filter((i) => visible[i]).length;
+      shown += s;
+      if (b.key === '\u0000tests') tests += s;
+    }
+    if (!shown) return;
+    const sx = L * FLOW_COLW * state.scale + state.tx;
+    if (sx < -110 || sx > W + 110) return;
+    ctx.font = '600 11px ui-sans-serif, system-ui';
+    ctx.fillStyle = cssVar('--fg2');
+    ctx.fillText((L + 1) + ' · ' + laneLabel(L), sx, 11);
+    ctx.font = '10px ui-sans-serif, system-ui';
+    ctx.fillStyle = cssVar('--fg3');
+    ctx.fillText(tests ? (shown - tests) + ' + ' + tests + ' tests' : String(shown), sx, 22);
+  });
+  ctx.restore();
+}
+
+function arrowHead(x1, y1, x2, y2, color, zoom) {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  const s = 6 / zoom;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - Math.cos(a - 0.4) * s, y2 - Math.sin(a - 0.4) * s);
+  ctx.lineTo(x2 - Math.cos(a + 0.4) * s, y2 - Math.sin(a + 0.4) * s);
+  ctx.closePath(); ctx.fill();
+}
+
+// Five files called skill.py in one column, every one labelled "skill.py", is five identical
+// rows. A basename that is not unique in the graph keeps as much of its path as it takes.
+const baseCount = new Map();
+for (const n of nodes) {
+  const b = n.k.slice(n.k.lastIndexOf('/') + 1);
+  baseCount.set(b, (baseCount.get(b) || 0) + 1);
+}
+const labelCache = new Map();
+function labelOf(i) {
+  if (labelCache.has(i)) return labelCache.get(i);
+  const n = nodes[i];
+  let out;
+  if (n.t === 'issue') out = n.k + ' ' + (n.s || '').slice(0, 32);
+  else if (n.t === 'skill' || n.t === 'concept' || n.t === 'note') out = n.k;
+  else {
+    const cut = n.k.lastIndexOf('/');
+    const base = n.k.slice(cut + 1) || n.k;
+    if (cut < 0 || (baseCount.get(base) || 0) < 2) out = base;
+    else {
+      // Walk back up the path until the tail is unique enough to tell them apart.
+      const parts = n.k.split('/');
+      out = parts.length > 2 ? parts.slice(-3).join('/') : n.k;
+      if (out.length > 34) out = '…/' + parts.slice(-2).join('/');
+    }
+  }
+  labelCache.set(i, out);
+  return out;
+}
+const varCache = new Map();
+function cssVar(name) {
+  if (!varCache.has(name)) varCache.set(name, getComputedStyle(document.documentElement).getPropertyValue(name).trim());
+  return varCache.get(name);
+}
+// Halo text and hull edges are painted with --bg, so a cached palette survives a theme switch
+// as text outlined in the colour of the theme you just left.
+if (window.matchMedia) {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const onScheme = () => { varCache.clear(); draw(); };
+  if (mq.addEventListener) mq.addEventListener('change', onScheme);
+  else if (mq.addListener) mq.addListener(onScheme);
+}
+
+// ---------------------------------------------------------------- interaction
+let dragging = null; let panning = null;
+
+function toWorld(cx, cy) {
+  const r = canvas.getBoundingClientRect();
+  return [(cx - r.left - state.tx) / state.scale, (cy - r.top - state.ty) / state.scale];
+}
+function pick(cx, cy) {
+  const [wx, wy] = toWorld(cx, cy);
+  // In flow the target is the pill, not a point at its centre -- a 200px-wide row that only
+  // accepted clicks in the middle 18px was the wrong hit area by an order of magnitude.
+  if (state.view === 'flow' && motion.flight >= 1) {
+    let best = -1;
+    for (let i = 0; i < N; i++) {
+      if (!visible[i]) continue;
+      if (Math.abs(wx - flowX[i]) <= pillW[i] / 2 + 3 && Math.abs(wy - flowY[i]) <= PILL_H / 2 + 3) best = i;
+    }
+    return best;
+  }
+  let best = -1; let bestD = 18 / state.scale;
+  for (let i = 0; i < N; i++) {
+    // Faded out by semantic zoom means faded out for the mouse too, or you select things you
+    // cannot see.
+    if (!visible[i] || lodAlpha(i) < 0.35) continue;
+    const d = Math.hypot(X(i) - wx, Y(i) - wy);
+    if (d < Math.max(bestD, radius(i) + 4)) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  const i = pick(e.clientX, e.clientY);
+  if (i >= 0 && state.view === 'graph') { dragging = i; pinned = i; alpha = Math.max(alpha, 0.3); }
+  else panning = [e.clientX - state.tx, e.clientY - state.ty];
+  canvas.classList.add('dragging');
+});
+window.addEventListener('mousemove', (e) => {
+  if (dragging !== null) {
+    const [wx, wy] = toWorld(e.clientX, e.clientY);
+    px[dragging] = wx; py[dragging] = wy; vx[dragging] = 0; vy[dragging] = 0;
+    draw(); return;
+  }
+  if (panning) { state.tx = e.clientX - panning[0]; state.ty = e.clientY - panning[1]; draw(); return; }
+  const i = pick(e.clientX, e.clientY);
+  if (i !== state.hover) { state.hover = i >= 0 ? i : null; draw(); }
+  showTip(i, e.clientX, e.clientY);
+});
+window.addEventListener('mouseup', (e) => {
+  if (dragging === null && panning && Math.abs(e.clientX - panning[0] - state.tx) < 3) { /* click on bg */ }
+  if (dragging !== null) { pinned = -1; alpha = Math.max(alpha, 0.25); tick(); }
+  dragging = null; panning = null;
+  canvas.classList.remove('dragging');
+});
+canvas.addEventListener('click', (e) => {
+  const i = pick(e.clientX, e.clientY);
+  select(i >= 0 ? i : null);
+});
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect();
+  const mx = e.clientX - r.left; const my = e.clientY - r.top;
+  const k = Math.exp(-e.deltaY * 0.0016);
+  const next = Math.min(4, Math.max(0.08, state.scale * k));
+  state.tx = mx - (mx - state.tx) * (next / state.scale);
+  state.ty = my - (my - state.ty) * (next / state.scale);
+  state.scale = next;
+  draw();
+}, { passive: false });
+
+function showTip(i, cx, cy) {
+  const tip = document.getElementById('tip');
+  if (i < 0) { tip.style.display = 'none'; return; }
+  const n = nodes[i];
+  const g = gitOf[i];
+  tip.innerHTML = `<b>${escapeHtml(n.k)}</b><br>${escapeHtml((n.s || '').slice(0, 150))}`
+    + (g && g !== 'pushed' ? `<br><span style="color:${GIT_COLOR[g]}">● ${GIT_LABEL[g]}</span>` : '');
+  tip.style.display = 'block';
+  const r = canvas.getBoundingClientRect();
+  tip.style.left = Math.min(cx - r.left + 14, r.width - 340) + 'px';
+  tip.style.top = (cy - r.top + 14) + 'px';
+}
+
+function select(i) {
+  state.selected = i;
+  recomputeLit();
+  renderDetail();
+  writeHash();
+  tick();
+}
+
+// Deep links. The URL is the state, so "look at this" becomes a link you can paste into a PR
+// instead of a sentence describing which four controls to click first.
+//
+// replaceState throws a SecurityError on an opaque origin -- a data: URL, a sandboxed frame,
+// some file:// contexts -- and this viewer is one self-contained file whose whole point is
+// being opened locally. A link-sharing convenience must never be able to break selection, so
+// the first failure disables the feature and everything else carries on.
+let hashOk = true;
+function writeHash() {
+  if (!hashOk) return;
+  const p = [];
+  if (state.view !== 'graph') p.push('v=' + state.view);
+  if (state.selected !== null) p.push('n=' + encodeURIComponent(nodes[state.selected].id));
+  if (state.impact) p.push('impact=1');
+  if (state.work) p.push('work=1');
+  if (state.search.trim()) p.push('q=' + encodeURIComponent(state.search.trim()));
+  if (state.types.size !== ALL_TYPES.size) p.push('t=' + [...state.types].join(','));
+  const h = p.join('&');
+  if (h === location.hash.slice(1)) return;
+  try {
+    history.replaceState(null, '', h ? '#' + h : location.pathname);
+  } catch (err) {
+    hashOk = false;
+  }
+}
+
+function applyHash() {
+  let h;
+  try { h = new URLSearchParams(location.hash.slice(1)); } catch (err) { return false; }
+  if (h.get('t')) state.types = new Set(h.get('t').split(',').filter(Boolean));
+  if (h.get('q')) { state.search = h.get('q'); document.getElementById('search').value = state.search; }
+  if (h.get('work') === '1') { state.work = true; document.getElementById('preset-work').setAttribute('aria-pressed', 'true'); }
+  if (h.get('impact') === '1') { state.impact = true; document.getElementById('preset-impact').setAttribute('aria-pressed', 'true'); }
+  const target = h.get('n') !== null ? idx.get(h.get('n')) : undefined;
+  if (h.get('t') || h.get('q') || h.get('work') === '1') { buildControls(); recomputeVisible(); }
+  if (h.get('v') === 'flow') setView('flow');
+  if (target !== undefined) { select(target); centerOn(target); }
+  return target !== undefined || h.get('v') === 'flow';
+}
+
+// ---------------------------------------------------------------- detail panel
+function renderDetail() {
+  const el = document.getElementById('detail');
+  if (state.selected === null) { el.classList.remove('open'); el.innerHTML = ''; return; }
+  el.classList.add('open');
+  const i = state.selected;
+  const n = nodes[i];
+  const g = gitOf[i];
+  const iss = issueOf[i];
+  const parts = [];
+
+  parts.push(`<button class="close" id="detail-close">×</button>`);
+  parts.push(`<div class="key">${escapeHtml(n.k)}</div>`);
+  parts.push(`<div class="meta">
+    <span class="badge" style="background:${TYPE_COLOR[n.t]}22;color:${TYPE_COLOR[n.t]}">${TYPE_LABEL[n.t] || n.t}</span>
+    <code>${n.id}</code>${n.by === 'agent' ? ' · agent-written' : ''}</div>`);
+  parts.push(`<div class="sum">${escapeHtml(n.s || 'No summary yet.')}</div>`);
+
+  const facts = [];
+  if (g) facts.push(`<span style="color:${GIT_COLOR[g] || 'var(--ok)'}">●</span> ${GIT_LABEL[g]}`);
+  if (n.st === 'stale') facts.push('<span style="color:var(--warn)">⚠ stale — summary predates the current file</span>');
+  if (layerOf[i] >= 0 && inFlow[i]) facts.push(`flow depth ${layerOf[i]}`);
+  // These were flow-graph counts, and the flow graph has no symbols in it -- so the panel
+  // read "0 importers" next to a canvas lighting up 43 callers. Same graph as impact mode now.
+  facts.push(`${impIn[i].length} direct ${plural(impIn[i].length, 'dependent', 'dependents')} · ${impOut[i].length} direct ${plural(impOut[i].length, 'dependency', 'dependencies')}`);
+  if (n.g && n.g.length) facts.push('tags: ' + n.g.map(escapeHtml).join(', '));
+  parts.push(`<h4>Facts</h4>${facts.map((f) => `<div style="font-size:12px;color:var(--fg2)">${f}</div>`).join('')}`);
+
+  if (impIn[i].length || impOut[i].length) {
+    const up = walk(i, impIn); const down = walk(i, impOut);
+    parts.push('<h4>Blast radius</h4>');
+    parts.push(`<div style="font-size:12px;color:var(--fg2)">
+      <b style="color:var(--warn)">${up.length}</b> ${plural(up.length, 'thing breaks', 'things break')} if this changes ·
+      relies on <b>${down.length}</b></div>`);
+    if (state.selected === i && !state.impact) {
+      parts.push('<button class="btn" style="margin-top:6px" id="show-impact">Show the ripple</button>');
+    }
+  }
+
+  if (iss) {
+    parts.push('<h4>Issue</h4>');
+    parts.push(`<div style="font-size:12px">state: <b>${iss.state}</b>${iss.frontier ? ' · <span style="color:var(--ok)">ready to pick up</span>' : ''}</div>`);
+    if (iss.openBlockedBy && iss.openBlockedBy.length) {
+      parts.push(`<div style="font-size:12px;color:var(--danger)">blocked by ${iss.openBlockedBy.map((b) => '#' + b).join(', ')}</div>`);
+    }
+    if (iss.assignees && iss.assignees.length) parts.push(`<div style="font-size:12px;color:var(--fg2)">assigned: ${iss.assignees.map(escapeHtml).join(', ')}</div>`);
+    if (iss.url) parts.push(`<a class="node" href="${escapeHtml(iss.url)}" target="_blank" rel="noopener">open on GitHub ↗</a>`);
+  }
+
+  const byType = new Map();
+  const add = (t, j, dir) => {
+    const key = t + (dir === 'in' ? ' ←' : ' →');
+    if (!byType.has(key)) byType.set(key, []);
+    byType.get(key).push(j);
+  };
+  for (const ei of outAdj[i]) add(edges[ei].type, edges[ei].b, 'out');
+  for (const ei of inAdj[i]) add(edges[ei].type, edges[ei].a, 'in');
+  if (byType.size) {
+    parts.push('<h4>Connections</h4>');
+    for (const [key, list] of [...byType].sort()) {
+      parts.push(`<div style="color:var(--fg3);font-size:11px;margin-top:6px">${escapeHtml(key)} (${list.length})</div>`);
+      for (const j of list.slice(0, 12)) {
+        parts.push(`<a class="node" data-goto="${j}">${escapeHtml(nodes[j].k)}</a>`);
+      }
+      if (list.length > 12) parts.push(`<div style="color:var(--fg3);font-size:11px">+${list.length - 12} more</div>`);
+    }
+  }
+
+  if (n.a && n.a.length) {
+    // File X-ray. The comma list said which symbols exist; the strip says where they sit and
+    // how the file is packed -- twelve ticks crowded into the first fifth of a 2400-line file
+    // is a different file from twelve spread evenly, and only one of those pictures shows it.
+    const declared = Number((String(n.s).match(/(\d+)\s*loc/) || [])[1] || 0);
+    const loc = Math.max(declared, ...n.a.map(([, l]) => Number(l) || 0), 1);
+    parts.push(`<h4>Symbols · ${n.a.length}</h4>`);
+    parts.push('<div class="xray"><div class="xr-bar">'
+      + n.a.map(([s, l]) => `<i style="left:${Math.min(99.4, ((Number(l) || 0) / loc) * 100).toFixed(2)}%" title="${escapeHtml(s)} — line ${l}"></i>`).join('')
+      + `</div><div class="xr-scale"><span>line 1</span><span>${loc}${declared ? ' loc' : ''}</span></div></div>`);
+    parts.push(`<div style="font-size:12px;color:var(--fg2)">${n.a.slice(0, 60).map(([s, l]) => `${escapeHtml(s)}<span style="color:var(--fg3)">:${l}</span>`).join(', ')}${n.a.length > 60 ? ' …' : ''}</div>`);
+  }
+
+  const ego = egoSvg(i);
+  if (ego) parts.push('<h4>Neighbourhood</h4>' + ego);
+
+  if (n.note) {
+    parts.push('<h4>Note</h4>');
+    parts.push(`<div style="font-size:12px;color:var(--fg2);border-left:2px solid var(--ok);padding-left:8px">${escapeHtml(n.note)}</div>`);
+  }
+
+  parts.push('<h4>Ask the agent</h4>');
+  parts.push(`<code id="cmd">scope context ${escapeHtml(n.k)}</code>`);
+  parts.push(`<button class="btn" style="margin-top:6px" id="copycmd">Copy command</button>`);
+
+  el.innerHTML = parts.join('');
+  el.querySelector('#detail-close').onclick = () => select(null);
+  const showImpact = el.querySelector('#show-impact');
+  if (showImpact) showImpact.onclick = () => document.getElementById('preset-impact').click();
+  el.querySelectorAll('[data-goto]').forEach((a) => {
+    a.onclick = () => { const j = Number(a.dataset.goto); select(j); centerOn(j); };
+  });
+  const copy = el.querySelector('#copycmd');
+  if (copy) copy.onclick = () => {
+    const text = el.querySelector('#cmd').textContent;
+    navigator.clipboard.writeText(text).then(() => { copy.textContent = 'Copied'; setTimeout(() => { copy.textContent = 'Copy command'; }, 1200); },
+      () => { copy.textContent = text; });
+  };
+}
+
+// Where a node ends up once any tab flight has landed. fit() has to measure the destination,
+// not the frame it is passing through.
+const destX = (i) => (state.view === 'flow' ? flowX[i] : px[i]);
+const destY = (i) => (state.view === 'flow' ? flowY[i] : py[i]);
+
+// Every camera move is a tween. Jumping the viewport loses the reader: after a cut you have
+// to re-find where you were, after a 500ms ease you simply watched yourself travel.
+function camTo(tx, ty, scale, ms) {
+  if (REDUCED || ms === 0) { state.tx = tx; state.ty = ty; state.scale = scale; draw(); return; }
+  motion.cam = { t: 0, ms: ms || 520, fx: state.tx, fy: state.ty, fs: state.scale, tx, ty, ts: scale };
+  tick();
+}
+
+// The one-hop neighbourhood, drawn rather than listed. The Connections list below answers
+// "what is attached"; this answers "what shape is this node in" at a glance -- a spoke of
+// twelve callers reads instantly as a hub, where twelve list rows read as twelve list rows.
+function egoSvg(i) {
+  const seen = new Set([i]);
+  const nb = [];
+  for (const ei of [...inAdj[i], ...outAdj[i]]) {
+    const e = edges[ei];
+    const j = e.a === i ? e.b : e.a;
+    if (seen.has(j)) continue;
+    seen.add(j);
+    nb.push([j, edgeKindOf(e.type)]);
+  }
+  if (!nb.length) return '';
+  nb.sort((a, b) => deg[b[0]] - deg[a[0]]);
+  const show = nb.slice(0, 8);
+  const VW = 300; const VH = 150; const cx = VW / 2; const cy = VH / 2;
+  const out = [];
+  show.forEach(([j, kind], k) => {
+    const ang = (k / show.length) * Math.PI * 2 - Math.PI / 2;
+    const x = cx + Math.cos(ang) * 104;
+    const y = cy + Math.sin(ang) * 50;
+    out.push(`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="${EKIND_COLOR[kind]}" stroke-width="1" opacity=".6"/>`);
+    out.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3 + Math.sqrt(deg[j]) * 0.7).toFixed(1)}" fill="${TYPE_COLOR[nodes[j].t] || '#888'}"/>`);
+    const above = y < cy;
+    out.push(`<text x="${x.toFixed(1)}" y="${(y + (above ? -9 : 14)).toFixed(1)}" text-anchor="middle">${escapeHtml(labelOf(j).slice(0, 18))}</text>`);
+  });
+  out.push(`<circle cx="${cx}" cy="${cy}" r="8" fill="${TYPE_COLOR[nodes[i].t] || '#888'}" stroke="${cssVar('--accent')}" stroke-width="2"/>`);
+  return `<svg class="ego" viewBox="0 0 ${VW} ${VH}" role="img" aria-label="one-hop neighbourhood">${out.join('')}</svg>`
+    + (nb.length > show.length ? `<div style="color:var(--fg3);font-size:10.5px;text-align:center;margin-top:-4px">+${nb.length - show.length} more, listed below</div>` : '');
+}
+
+function centerOn(i) {
+  const s = Math.max(state.scale, 1);
+  camTo(W / 2 - destX(i) * s, H / 2 - destY(i) * s, s);
+}
+
+function fit(ms) {
+  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity; let any = false;
+  for (let i = 0; i < N; i++) {
+    if (!visible[i]) continue;
+    if (state.view === 'flow' && !inFlow[i]) continue;
+    any = true;
+    const w = state.view === 'flow' ? pillW[i] / 2 : radius(i);
+    minX = Math.min(minX, destX(i) - w); maxX = Math.max(maxX, destX(i) + w);
+    minY = Math.min(minY, destY(i)); maxY = Math.max(maxY, destY(i));
+  }
+  if (!any) return;
+  const pad = 70;
+  const topPad = state.view === 'flow' ? 34 : 0;   // room for the sticky lane headers
+  const sx = (W - pad * 2) / Math.max(1, maxX - minX);
+  const sy = (H - pad * 2 - topPad) / Math.max(1, maxY - minY);
+  const scale = Math.min(3, Math.max(0.08, Math.min(sx, sy)));
+  camTo(W / 2 - ((minX + maxX) / 2) * scale, (H + topPad) / 2 - ((minY + maxY) / 2) * scale, scale, ms);
+}
+
+// ---------------------------------------------------------------- controls
+function buildControls() {
+  const counts = {};
+  for (const n of nodes) counts[n.t] = (counts[n.t] || 0) + 1;
+  const typesEl = document.getElementById('types');
+  typesEl.innerHTML = Object.keys(counts).sort().map((t) => `
+    <label class="row"><input type="checkbox" data-type="${t}"${state.types.has(t) ? ' checked' : ''}>
+      <span class="sw" style="background:${TYPE_COLOR[t] || '#888'}"></span>
+      ${TYPE_LABEL[t] || t}<span class="n">${counts[t]}</span></label>`).join('');
+  typesEl.querySelectorAll('input').forEach((cb) => {
+    cb.onchange = () => {
+      if (cb.checked) state.types.add(cb.dataset.type); else state.types.delete(cb.dataset.type);
+      recomputeVisible(); draw();
+    };
+  });
+
+  // Provenance and check-state facets only exist on a merged graph (Scope folds another
+  // store in and stamps `src`/`chk`). An unmerged file graph has neither, so both sections
+  // stay hidden rather than showing an empty box.
+  const sc = {};
+  for (const n of nodes) if (n.src) sc[n.src] = (sc[n.src] || 0) + 1;
+  const skeys = Object.keys(SRC_COLOR).filter((k) => sc[k]);
+  if (skeys.length > 1) {
+    document.getElementById('src-section').hidden = false;
+    const srcEl = document.getElementById('sources');
+    srcEl.innerHTML = skeys.map((k) => `
+      <label class="row"><input type="checkbox" data-src="${k}" checked>
+        <i class="${SRC_SHAPE[k]}" style="color:${SRC_COLOR[k]};width:11px;height:11px;flex:none;border-radius:50%;${SRC_SHAPE[k] ? 'background:none;border:1.5px ' + (k === 'symbols' ? 'dashed' : 'solid') + ' currentColor' : 'background:currentColor'}"></i>
+        ${SRC_LABEL[k]} <span style="color:var(--fg3)">· ${SRC_HINT[k]}</span><span class="n">${sc[k]}</span></label>`).join('');
+    srcEl.querySelectorAll('input').forEach((cb) => {
+      cb.onchange = () => {
+        if (cb.checked) state.sources.add(cb.dataset.src); else state.sources.delete(cb.dataset.src);
+        recomputeVisible(); draw();
+      };
+    });
+  }
+
+  const cc = {};
+  for (const n of nodes) if (n.chk) cc[n.chk] = (cc[n.chk] || 0) + 1;
+  const ckeys = Object.keys(CHK_COLOR).filter((k) => cc[k]);
+  if (hasCheck) {
+    document.getElementById('chk-section').hidden = false;
+    const chkEl = document.getElementById('checkstates');
+    const clean = nodes.length - ckeys.reduce((a, k) => a + cc[k], 0);
+    chkEl.innerHTML = ckeys.map((k) => `
+      <label class="row"><input type="checkbox" data-chk="${k}" checked>
+        <span class="sw" style="background:${CHK_COLOR[k]}"></span>
+        ${CHK_LABEL[k]}<span class="n">${cc[k]}</span></label>`).join('')
+      + `<label class="row"><input type="checkbox" data-chk="(clean)" checked>
+        <span class="sw" style="background:var(--ok)"></span>
+        clean<span class="n">${clean}</span></label>`;
+    chkEl.querySelectorAll('input').forEach((cb) => {
+      cb.onchange = () => {
+        if (cb.checked) state.checks.add(cb.dataset.chk); else state.checks.delete(cb.dataset.chk);
+        recomputeVisible(); draw();
+      };
+    });
+  }
+
+  const ekc = { structural: 0, editorial: 0 };
+  for (const e of edges) ekc[edgeKindOf(e.type)]++;
+  const ekEl = document.getElementById('edgekinds');
+  ekEl.innerHTML = ['structural', 'editorial'].map((k) => `
+    <label class="row"><input type="checkbox" data-ek="${k}" checked>
+      <span class="sw" style="background:${EKIND_COLOR[k]}"></span>
+      ${EKIND_LABEL[k]}<span class="n">${ekc[k]}</span></label>`).join('');
+  ekEl.querySelectorAll('input').forEach((cb) => {
+    cb.onchange = () => {
+      if (cb.checked) state.edgeKinds.add(cb.dataset.ek); else state.edgeKinds.delete(cb.dataset.ek);
+      recomputeVisible(); draw();
+    };
+  });
+
+  const gc = {};
+  for (let i = 0; i < N; i++) if (gitOf[i]) gc[gitOf[i]] = (gc[gitOf[i]] || 0) + 1;
+  const gitEl = document.getElementById('gitstates');
+  const gkeys = Object.keys(GIT_COLOR).filter((k) => gc[k]);
+  gitEl.innerHTML = gkeys.length ? gkeys.map((g) => `
+    <label class="row"><input type="checkbox" data-git="${g}" checked>
+      <span class="sw" style="background:${GIT_COLOR[g] || 'var(--ok)'}"></span>
+      ${GIT_LABEL[g]}<span class="n">${gc[g]}</span></label>`).join('')
+    : '<div style="color:var(--fg3);font-size:11.5px">no git overlay — run scope git-overlay</div>';
+  gitEl.querySelectorAll('input').forEach((cb) => {
+    cb.onchange = () => {
+      if (cb.checked) state.gitFilter.add(cb.dataset.git); else state.gitFilter.delete(cb.dataset.git);
+      recomputeVisible(); draw();
+    };
+  });
+
+  const tagCount = new Map();
+  for (const n of nodes) for (const t of n.g || []) tagCount.set(t, (tagCount.get(t) || 0) + 1);
+  const top = [...tagCount].sort((a, b) => b[1] - a[1]).slice(0, 22);
+  const tagsEl = document.getElementById('tags');
+  tagsEl.innerHTML = top.map(([t, c]) => `<button class="chip" data-tag="${escapeHtml(t)}" aria-pressed="false">${escapeHtml(t)} ${c}</button>`).join('');
+  tagsEl.querySelectorAll('.chip').forEach((b) => {
+    b.onclick = () => {
+      const t = b.dataset.tag;
+      const on = b.getAttribute('aria-pressed') === 'true';
+      b.setAttribute('aria-pressed', on ? 'false' : 'true');
+      if (on) state.tags.delete(t); else state.tags.add(t);
+      recomputeVisible(); draw();
+    };
+  });
+
+  // Shape carries what colour cannot: nine categories is past what any palette survives, and
+  // past what a deuteranope can separate at all. Hovering a row spotlights the real nodes.
+  const legendRows = [
+    ['blob', TYPE_COLOR.mod, 'tinted territory — a module and all it holds', null],
+    ['sq', TYPE_COLOR.mod, 'square — module', 'mod'],
+    ['', TYPE_COLOR.file, 'circle — file', 'file'],
+    ['dia', TYPE_COLOR.sym, 'diamond — symbol', 'sym'],
+    ['tri', TYPE_COLOR.entry, 'triangle — entrypoint', 'entry'],
+    ['', '#9aa7b4', 'size — √degree; the biggest dot is the hub', null],
+    ['', SRC_COLOR.both, 'filled — both tools saw it', null],
+    ['ring', TYPE_COLOR.file, 'outlined — only the file graph saw it', null],
+    ['dashring', TYPE_COLOR.sym, 'dashed outline — only the symbol graph saw it', null],
+    ['ring', '#f0a830', 'ring — committed, not pushed', null],
+    ['ring2', '#e07b39', 'double ring — modified locally', null],
+    ['ring', '#4a90d9', 'ring — staged', null],
+    ['dashring', '#a3adb9', 'dashed ring — untracked', null],
+    ['ring', '#e05252', 'red ring — conflicted', null],
+    ['hex glow', '#3fb950', 'hexagon — open issue (glow = ready)', 'issue'],
+    ['hex', '#6b7885', 'hexagon — closed issue', null],
+    ['line', '#e05252', 'red dashed edge — blocks / import cycle', null],
+    ['hatch', '#f0a830', '✕ over the node — summary is stale', null],
+    ['', HOP_COLOR(1), 'impact: 1 hop away — what you break today', null],
+    ['', HOP_COLOR(6), 'impact: far away — reachable, not urgent', null],
+  ];
+  const legendEl = document.getElementById('legend');
+  legendEl.innerHTML = legendRows.map(([shape, c, label, spot]) =>
+    `<div class="legend-item"${spot ? ` data-spot="${spot}"` : ''}><i class="${shape}" style="color:${c}">`
+    + `${shape === 'hatch' ? '✕' : ''}</i>${label}</div>`).join('');
+  // Hovering a legend row is a question -- "which ones are those?" -- and the graph answers it
+  // by dimming everything else, instead of leaving you to match a swatch by eye.
+  legendEl.querySelectorAll('[data-spot]').forEach((row) => {
+    row.onmouseenter = () => { state.spotlight = row.dataset.spot; draw(); };
+    row.onmouseleave = () => { state.spotlight = null; draw(); };
+  });
+}
+
+// When nothing is on screen, say which control did it -- an empty canvas that does not explain
+// itself reads as a broken viewer rather than an over-tight filter.
+function diagnoseEmpty(shown) {
+  const el = document.getElementById('empty');
+  if (shown > 0) { el.classList.remove('on'); return; }
+  const causes = [];
+  if (state.search.trim()) causes.push(['no node matches “' + state.search.trim() + '”', 'search']);
+  if (state.work) causes.push(['“Work in flight” is on and nothing is uncommitted', 'work']);
+  if (state.disagree) causes.push(['“Only one tool sees it” is on and the two graphs agree everywhere', 'disagree']);
+  if (state.tags.size) causes.push([state.tags.size + ' tag filter(s) are on', 'tags']);
+  if (state.types.size < new Set(nodes.map((n) => n.t)).size) causes.push(['some node types are unticked', 'types']);
+  if (state.view === 'flow') causes.push(['this graph has no imports or calls to lay out', 'flow']);
+  const why = causes.length ? causes[0] : ['every node is filtered out', 'all'];
+  el.classList.add('on');
+  el.firstElementChild.innerHTML = '<b>Nothing to draw</b><p>' + escapeHtml(why[0])
+    + '.</p><button id="empty-reset">Clear all filters</button>';
+  el.querySelector('#empty-reset').onclick = resetFilters;
+}
+
+function resetFilters() {
+  state.search = ''; document.getElementById('search').value = '';
+  state.work = false; state.disagree = false;
+  state.tags.clear();
+  state.types = new Set(nodes.map((n) => n.t));
+  state.gitFilter = new Set(Object.keys(GIT_COLOR));
+  state.sources = new Set(nodes.map((n) => n.src).filter(Boolean));
+  state.checks = new Set(['drift', 'dangling', 'orphan', 'ambiguous', '(clean)']);
+  state.edgeKinds = new Set(['structural', 'editorial']);
+  buildControls();
+  document.getElementById('preset-work').setAttribute('aria-pressed', 'false');
+  document.getElementById('preset-disagree').setAttribute('aria-pressed', 'false');
+  recomputeVisible(); fit();
+}
+
+function setView(v) {
+  if (v === state.view) return;
+  motion.flightFrom = state.view;
+  motion.flightRaw = REDUCED ? 1 : 0;
+  motion.flight = motion.flightRaw;
+  state.view = v;
+  document.getElementById('tab-graph').setAttribute('aria-selected', String(v === 'graph'));
+  document.getElementById('tab-flow').setAttribute('aria-selected', String(v === 'flow'));
+  document.getElementById('stage').classList.toggle('flow', v === 'flow');
+  recomputeVisible();
+  recomputeLit();
+  fit(700);
+  if (v === 'graph') alpha = Math.max(alpha, 0.35);
+  tick();
+}
+
+document.getElementById('tab-graph').onclick = () => { setView('graph'); writeHash(); };
+document.getElementById('tab-flow').onclick = () => { setView('flow'); writeHash(); };
+document.getElementById('fit').onclick = () => fit();
+document.getElementById('toggle-hulls').onclick = (e) => {
+  state.hulls = !state.hulls;
+  e.currentTarget.setAttribute('aria-pressed', String(state.hulls));
+  draw();
+};
+document.getElementById('toggle-lod').onclick = (e) => {
+  state.lod = !state.lod;
+  e.currentTarget.setAttribute('aria-pressed', String(state.lod));
+  draw();
+};
+document.getElementById('preset-work').onclick = (e) => {
+  state.work = !state.work;
+  e.currentTarget.setAttribute('aria-pressed', String(state.work));
+  recomputeVisible(); fit(); writeHash();
+};
+document.getElementById('preset-disagree').onclick = (e) => {
+  state.disagree = !state.disagree;
+  e.currentTarget.setAttribute('aria-pressed', String(state.disagree));
+  recomputeVisible(); fit();
+};
+document.getElementById('preset-impact').onclick = (e) => {
+  state.impact = !state.impact;
+  e.currentTarget.setAttribute('aria-pressed', String(state.impact));
+  recomputeLit(); writeHash(); tick();
+};
+const searchEl = document.getElementById('search');
+searchEl.oninput = () => {
+  state.search = searchEl.value;
+  recomputeVisible(); writeHash(); draw();
+};
+searchEl.onkeydown = (e) => {
+  if (e.key !== 'Enter') return;
+  for (let i = 0; i < N; i++) if (matched[i]) { select(i); centerOn(i); break; }
+};
+window.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') {
+    if (e.key === 'Escape') { searchEl.value = ''; state.search = ''; recomputeVisible(); draw(); searchEl.blur(); }
+    return;
+  }
+  if (e.key === '/') { e.preventDefault(); searchEl.focus(); }
+  else if (e.key === 'f') fit();
+  else if (e.key === 'Escape') select(null);
+});
+
+function plural(n, one, many) { return n === 1 ? one : many; }
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// ---------------------------------------------------------------- boot
+// One loop drives everything that moves: the force sim, the tab flight, the impact ripple,
+// the camera tween, the load settle and the marching ants. It stops the moment none of them
+// has anything left to do, so an idle viewer costs nothing.
+let raf = null;
+let lastT = 0;
+function tick() {
+  if (raf) return;
+  lastT = 0;
+  const loop = (ts) => {
+    raf = null;
+    const dt = lastT ? Math.min(0.05, (ts - lastT) / 1000) : 0.016;
+    lastT = ts;
+    let busy = false;
+
+    if (state.view === 'graph' && alpha > 0.02 && motion.flightRaw >= 1) { step(); busy = true; }
+    if (motion.settle < 1) { motion.settle = Math.min(1, motion.settle + dt / 1.1); busy = true; }
+    if (motion.flightRaw < 1) {
+      motion.flightRaw = Math.min(1, motion.flightRaw + dt / 0.75);
+      motion.flight = easeInOut(motion.flightRaw);
+      if (motion.flightRaw >= 1) recomputeVisible();
+      busy = true;
+    }
+    if (motion.ripple >= 0 && motion.ripple !== Infinity) {
+      motion.ripple += dt;
+      if (motion.ripple * RIPPLE_HOPS_PER_SEC < motion.rippleFar + 1.5) busy = true;
+    }
+    if (state.view === 'flow' && state.selected !== null && !REDUCED) {
+      motion.dash = (motion.dash + dt * 46) % 1200; busy = true;
+    }
+    if (motion.cam) {
+      const c = motion.cam;
+      c.t = Math.min(1, c.t + (dt * 1000) / c.ms);
+      const k = easeInOut(c.t);
+      state.tx = c.fx + (c.tx - c.fx) * k;
+      state.ty = c.fy + (c.ty - c.fy) * k;
+      state.scale = c.fs + (c.ts - c.fs) * k;
+      if (c.t >= 1) motion.cam = null; else busy = true;
+    }
+    draw();
+    if (busy) raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+
+document.getElementById('repo-name').textContent =
+  (DATA.meta && DATA.meta.name ? DATA.meta.name : '') + (DATA.meta && DATA.meta.repo ? ' · ' + DATA.meta.repo : '');
+
+if (DATA.git && DATA.git.notes && DATA.git.notes.length) {
+  const b = document.getElementById('banner');
+  b.textContent = DATA.git.notes[0];
+  b.style.display = 'block';
+}
+
+resize();
+seedGraphLayout();
+buildSprings();
+computeFlowLayout();
+buildControls();
+recomputeVisible();
+for (let k = 0; k < 260; k++) step();
+fit(0);
+// A pasted link is the state, so it has to be applied before the first paint settles.
+const deepLinked = applyHash();
+tick();
+
+// Re-fit once real layout dimensions exist. Fonts and flex sizing land after the first paint,
+// so the boot-time fit is a best guess. A deep link already framed its own target.
+requestAnimationFrame(() => { resize(); if (!deepLinked) fit(0); });
+window.addEventListener('load', () => { resize(); if (!deepLinked) fit(0); });
+</script>
+</body>
+</html>

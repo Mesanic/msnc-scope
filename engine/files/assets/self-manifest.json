@@ -1,0 +1,190 @@
+{
+  "v": 1,
+  "skill": "scope",
+  "version": "0.1.0",
+  "commands": [
+    "init", "scan", "index", "query", "context", "neighbors", "path", "expand",
+    "git-overlay", "issues", "verify", "prune", "stats", "graph-html", "note"
+  ],
+  "nodes": [
+    { "id": "k_scope", "t": "skill", "k": "scope",
+      "s": "Context engine: persistent knowledge graph in .scope/files/ with ranked search, upstream/downstream flow, git push state, GitHub issues, interactive viewer.",
+      "g": ["scope", "skill", "context", "graph"] },
+
+    { "id": "k_first", "t": "skill", "k": "scope-first protocol",
+      "s": "Scope fires BEFORE any Grep/Glob/Read exploration. Ritual: read .scope/MAP.md, git-overlay, issues if relevant, then query the task nouns. MSNC's Tuner routes here; its gate enforces impact.",
+      "g": ["scope", "protocol", "first", "ritual", "explore", "search"] },
+
+    { "id": "k_ladder", "t": "skill", "k": "retrieval ladder",
+      "s": "Climb only as far as needed: MAP.md 600tk orientation, query 40tk/hit, context 700tk full picture, neighbors 1200tk, then ranged Read at anchor lines. Never cat the jsonl stores.",
+      "g": ["scope", "protocol", "retrieval", "budget", "tokens"] },
+
+    { "id": "k_writeback", "t": "skill", "k": "write-back protocol",
+      "s": "Mandatory before ending a turn: scan changed files, set-summary improved understanding (mechanism not vibes, 200 chars), add relates/implements edges, record decisions, resync issues.",
+      "g": ["scope", "protocol", "writeback", "maintain", "insight", "summary"] },
+
+    { "id": "k_single_store", "t": "skill", "k": "single-store rule",
+      "s": "Project context lives in the graph, work items in GitHub issues. No scratch NOTES.md/TODO.md/context.md files - they fragment context, go stale silently and nothing indexes them.",
+      "g": ["scope", "protocol", "storage", "notes", "todo"] },
+
+    { "id": "k_flywheel", "t": "skill", "k": "flywheel rule",
+      "s": "If two queries miss, fall back to Grep then write the finding back as a node or edge. A miss is a defect in the graph, not a reason to abandon it; next session should hit.",
+      "g": ["scope", "protocol", "miss", "grep", "fallback"] },
+
+    { "id": "k_init", "t": "skill", "k": "scope init",
+      "s": "Creates the .scope/files/ tree and config.json, and appends overlays/ and view/ to .gitignore.",
+      "g": ["scope", "command", "init", "setup", "gitignore"] },
+
+    { "id": "k_adopt", "t": "skill", "k": "adopting a project",
+      "s": "Bootstrap an existing repo: init then scan (under a second for hundreds of files), then git-overlay, issues, graph-html. Both init steps are idempotent and append rather than replace.",
+      "g": ["scope", "protocol", "adopt", "onboard", "bootstrap", "existing", "new", "setup",
+            "build", "index", "start"] },
+
+    { "id": "k_enrich", "t": "skill", "k": "enrichment pass",
+      "s": "A fresh scan has structure but no insight. Expand the highest fan-in files, replace their generated summaries with real ones, write MAP.md Orientation, add relates edges the scanner cannot see.",
+      "g": ["scope", "protocol", "enrich", "insight", "summaries", "orientation", "quality"] },
+
+    { "id": "k_scan", "t": "skill", "k": "scope scan",
+      "s": "Incremental index: hashes files (LF-normalized), extracts imports/exports/anchors per language, builds file/mod/entry nodes and scan-owned edges, regenerates MAP.md sections. --full ignores hashes.",
+      "g": ["scope", "command", "scan", "index", "expand", "incremental"] },
+
+    { "id": "k_index", "t": "skill", "k": "scope index",
+      "s": "Rebuilds index/terms.tsv, the inverted term-to-node index. Runs automatically after scan, issues and note; run manually to repair a corrupt or conflicted index.",
+      "g": ["scope", "command", "index", "search", "terms"] },
+
+    { "id": "k_query", "t": "skill", "k": "scope query",
+      "s": "Ranked retrieval, ~40 tokens per hit. Scores idf x field weight x coverage x type boost x importance, penalizes stale. Flags --type --k --budget. Hits carry flow markers in:N out:N d:N.",
+      "g": ["scope", "command", "query", "search", "find", "ranked", "where", "locate", "lookup"] },
+
+    { "id": "k_context", "t": "skill", "k": "scope context",
+      "s": "The standard unit of understanding: one card showing what reaches this file, what breaks if it changes, what it depends on, plus tests, docs, siblings, issues, git state, staleness.",
+      "g": ["scope", "command", "context", "upstream", "downstream", "impact", "flow", "breaks",
+            "affects", "depends", "explain", "understand", "callers", "dependents"] },
+
+    { "id": "k_neighbors", "t": "skill", "k": "scope neighbors",
+      "s": "BFS adjacency grouped by edge type, --depth 1-3, --dir in/out/both, --type filter. Use when tracing an unusual relation that context does not surface.",
+      "g": ["scope", "command", "neighbors", "adjacency", "traverse"] },
+
+    { "id": "k_path", "t": "skill", "k": "scope path",
+      "s": "Bidirectional BFS showing how two nodes connect, up to 6 hops, undirected over all edge types. Answers 'is A related to B and how'.",
+      "g": ["scope", "command", "path", "connect", "route"] },
+
+    { "id": "k_expand", "t": "skill", "k": "scope expand",
+      "s": "Symbol-level deep dive on one file: creates sym nodes with line anchors for ranged reads, exports edges, and heuristic intra-file calls edges. Re-runs automatically on later scans.",
+      "g": ["scope", "command", "expand", "symbol", "anchor", "deep"] },
+
+    { "id": "k_git", "t": "skill", "k": "scope git-overlay",
+      "s": "Per-file push state (conflicted > modified > staged > unpushed > pushed) via porcelain -z and three-dot diff. Auto-refreshed by the session hook and every scan. No upstream: only dirty files marked.",
+      "g": ["scope", "command", "git", "push", "unpushed", "status", "overlay", "committed",
+            "uncommitted", "dirty"] },
+
+    { "id": "k_issues", "t": "skill", "k": "scope issues",
+      "s": "Syncs GitHub issues into the graph as nodes with blocks/part-of/closes/mentions edges, caches database ids, computes the frontier. Falls back to body conventions if the API is unavailable.",
+      "g": ["scope", "command", "issues", "github", "sync", "frontier"] },
+
+    { "id": "k_link", "t": "skill", "k": "scope issues link",
+      "s": "Creates a GitHub dependency. Two-step: resolve the blocker's numeric DATABASE id via gh api issues/N --jq .id, then POST blocked_by with -F issue_id. Not the issue number, not node_id.",
+      "g": ["scope", "command", "issues", "link", "blocked", "dependency", "database", "id"] },
+
+    { "id": "k_verify", "t": "skill", "k": "scope verify",
+      "s": "Detects drift: content hash changed since the summary was written marks a node stale, missing files mark it dead. Reports which agent-written summaries most need re-blessing.",
+      "g": ["scope", "command", "verify", "stale", "drift", "trim", "maintain"] },
+
+    { "id": "k_prune", "t": "skill", "k": "scope prune",
+      "s": "Removes dead nodes, orphan edges and duplicates, and flags over-budget summaries for rewrite. Closed issues are kept as knowledge; --dry-run previews. This is how the store is trimmed.",
+      "g": ["scope", "command", "prune", "trim", "cleanup", "dead", "stale"] },
+
+    { "id": "k_stats", "t": "skill", "k": "scope stats",
+      "s": "Store size by layer in estimated tokens, node and edge counts by type, top fan-in nodes, 'enrich next' (most-imported files still lacking an agent summary), breached budgets.",
+      "g": ["scope", "command", "stats", "budget", "tokens", "size"] },
+
+    { "id": "k_html", "t": "skill", "k": "scope graph-html",
+      "s": "Generates the self-contained interactive viewer at .scope/files/view/scope.html with all data embedded and zero network requests. Refresh overlays first so push state and issues are current.",
+      "g": ["scope", "command", "viewer", "html", "visualize", "graph"] },
+
+    { "id": "k_note", "t": "skill", "k": "scope note",
+      "s": "Write-back helpers: note add creates concept/note nodes, note set-summary re-blesses a node as agent-authored and clears stale, note edge records a learned relation. Enforces the 200-char limit.",
+      "g": ["scope", "command", "note", "writeback", "concept", "summary", "edge"] },
+
+    { "id": "k_nodes", "t": "skill", "k": "node schema",
+      "s": "JSONL keys id t k s g h a st w by ts. Types file mod sym concept adr issue skill note entry. Summary hard max 200 chars. by:agent guards a summary so scan marks it stale but never overwrites.",
+      "g": ["scope", "format", "node", "schema", "jsonl"] },
+
+    { "id": "k_edges", "t": "skill", "k": "edge taxonomy",
+      "s": "imports exports part-of tested-by documents calls blocks closes mentions relates implements. Scan owns structural types, issues owns GitHub types, relates/implements are agent-only.",
+      "g": ["scope", "format", "edge", "schema", "taxonomy", "ownership"] },
+
+    { "id": "k_flow", "t": "skill", "k": "flow view",
+      "s": "Layered DAG left-to-right from entrypoints over reversed imports: click-to-light upstream/downstream ribbons, numbered sequence, impact mode, work-in-flight preset showing where open work sits.",
+      "g": ["scope", "viewer", "flow", "workflow", "dag", "order", "sequence", "visualize",
+            "diagram", "architecture", "entrypoint"] },
+
+    { "id": "k_encoding", "t": "skill", "k": "viewer encodings",
+      "s": "Fill by node type, issues are hexagons green open grey closed. Ring shows git state: none pushed, amber unpushed, blue staged, orange modified, grey dashed untracked, red conflicted. Hatch is stale.",
+      "g": ["scope", "viewer", "legend", "color", "encoding", "push"] },
+
+    { "id": "k_budgets", "t": "skill", "k": "token budgets",
+      "s": "MAP.md 600 tokens, query output 1500, context 900, node summary 200 chars hard, whole store 50k soft. Breaches are reported by stats; the fix is denser summaries or prune, not a bigger limit.",
+      "g": ["scope", "budget", "tokens", "limit", "efficiency"] },
+
+    { "id": "k_determinism", "t": "skill", "k": "store determinism",
+      "s": "A scan with no file changes produces a byte-identical store: sorted nodes and edges, fixed key order, LF-normalized hashing. Merge conflicts resolve by keeping both sides then scan && index.",
+      "g": ["scope", "format", "determinism", "merge", "conflict", "git"] }
+  ],
+  "edges": [
+    ["k_first", "part-of", "k_scope"],
+    ["k_ladder", "part-of", "k_scope"],
+    ["k_writeback", "part-of", "k_scope"],
+    ["k_single_store", "part-of", "k_scope"],
+    ["k_flywheel", "part-of", "k_scope"],
+    ["k_init", "part-of", "k_scope"],
+    ["k_adopt", "part-of", "k_scope"],
+    ["k_enrich", "part-of", "k_adopt"],
+    ["k_adopt", "relates", "k_init"],
+    ["k_adopt", "relates", "k_scan"],
+    ["k_enrich", "relates", "k_expand"],
+    ["k_enrich", "relates", "k_note"],
+    ["k_enrich", "relates", "k_writeback"],
+    ["k_scan", "part-of", "k_scope"],
+    ["k_index", "part-of", "k_scope"],
+    ["k_query", "part-of", "k_scope"],
+    ["k_context", "part-of", "k_scope"],
+    ["k_neighbors", "part-of", "k_scope"],
+    ["k_path", "part-of", "k_scope"],
+    ["k_expand", "part-of", "k_scope"],
+    ["k_git", "part-of", "k_scope"],
+    ["k_issues", "part-of", "k_scope"],
+    ["k_link", "part-of", "k_issues"],
+    ["k_verify", "part-of", "k_scope"],
+    ["k_prune", "part-of", "k_scope"],
+    ["k_stats", "part-of", "k_scope"],
+    ["k_html", "part-of", "k_scope"],
+    ["k_note", "part-of", "k_scope"],
+    ["k_nodes", "part-of", "k_scope"],
+    ["k_edges", "part-of", "k_scope"],
+    ["k_flow", "part-of", "k_html"],
+    ["k_encoding", "part-of", "k_html"],
+    ["k_budgets", "part-of", "k_scope"],
+    ["k_determinism", "part-of", "k_nodes"],
+    ["k_first", "relates", "k_ladder"],
+    ["k_ladder", "relates", "k_query"],
+    ["k_ladder", "relates", "k_context"],
+    ["k_writeback", "relates", "k_note"],
+    ["k_writeback", "relates", "k_scan"],
+    ["k_flywheel", "relates", "k_writeback"],
+    ["k_single_store", "relates", "k_issues"],
+    ["k_scan", "relates", "k_index"],
+    ["k_scan", "relates", "k_determinism"],
+    ["k_query", "relates", "k_index"],
+    ["k_context", "relates", "k_flow"],
+    ["k_context", "relates", "k_edges"],
+    ["k_verify", "relates", "k_prune"],
+    ["k_verify", "relates", "k_nodes"],
+    ["k_prune", "relates", "k_budgets"],
+    ["k_stats", "relates", "k_budgets"],
+    ["k_issues", "relates", "k_link"],
+    ["k_git", "relates", "k_encoding"],
+    ["k_html", "relates", "k_encoding"],
+    ["k_note", "relates", "k_nodes"]
+  ]
+}

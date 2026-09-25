@@ -1,0 +1,9 @@
+# One line ending everywhere. Four scripts carry a shebang, and a CRLF after `#!` makes
+# the kernel look for an interpreter called "node" -- so this is correctness on Linux and
+# macOS, not cosmetics. The vendored .wasm and the viewer templates are declared binary so
+# no tool ever rewrites bytes inside them.
+* text=auto eol=lf
+
+*.wasm binary
+*.png  binary
+*.jpg  binary

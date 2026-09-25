@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-23",
+  "project": "scope-symbols",
+  "purpose": "Provenance of every vendored runtime artifact under skills/scope/engine/symbols/scripts/vendor/. Regenerate by re-fetching the listed npm packages in a scratch dir and recomputing sha256.",
+  "toolVersions": {
+    "node": "v22.14.0",
+    "npm": "10.9.2"
+  },
+  "artifacts": [
+    {
+      "file": "web-tree-sitter/web-tree-sitter.mjs",
+      "role": "tree-sitter runtime JS loader (ESM)",
+      "sourcePackage": "web-tree-sitter@0.26.13",
+      "packagePath": "web-tree-sitter.js",
+      "vendoredAs": "web-tree-sitter.mjs",
+      "sha256": "0c868236a47296b4ff3c1570f20e0899e4a784ff6e5cd7bfc9c3a55225463e4a",
+      "bytes": 153666,
+      "fetchedAt": "2026-08-23"
+    },
+    {
+      "file": "web-tree-sitter/web-tree-sitter.wasm",
+      "role": "tree-sitter runtime core (wasm)",
+      "sourcePackage": "web-tree-sitter@0.26.13",
+      "packagePath": "web-tree-sitter.wasm",
+      "sha256": "99fa2281fc4c6da713ccdadce72e81571b032ab9901b751be2d5aa127c843aaf",
+      "bytes": 201535,
+      "fetchedAt": "2026-08-23"
+    },
+    {
+      "file": "grammars/tree-sitter-typescript.wasm",
+      "role": "TypeScript grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-typescript@0.23.2",
+      "packagePath": "tree-sitter-typescript.wasm",
+      "sha256": "778025db5a8be0e70f8ccc3671e486dfeddd048c25d9e8a70c26de2e1bf6f97d",
+      "bytes": 1413849,
+      "fetchedAt": "2026-08-23"
+    },
+    {
+      "file": "grammars/tree-sitter-tsx.wasm",
+      "role": "TSX/JSX grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-typescript@0.23.2",
+      "packagePath": "tree-sitter-tsx.wasm",
+      "sha256": "79e5da75ea62855a0cd67177685f0164eac87d5f630b3cbe1e0a099751ad30f8",
+      "bytes": 1445638,
+      "fetchedAt": "2026-08-23"
+    },
+    {
+      "file": "grammars/tree-sitter-python.wasm",
+      "role": "Python grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-python@0.25.0",
+      "packagePath": "tree-sitter-python.wasm",
+      "sha256": "16108b50df4ee9a30168794252ab55e7c93bfc5765d7fa0aa3e335752c515f47",
+      "bytes": 457883,
+      "fetchedAt": "2026-08-23"
+    },
+    {
+      "file": "grammars/tree-sitter-go.wasm",
+      "role": "Go grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-go@0.25.0",
+      "packagePath": "tree-sitter-go.wasm",
+      "sha256": "9504573f352b20be7f2f1911754d710622aedc15afff16d5ed8fb5645681aee7",
+      "bytes": 217182,
+      "fetchedAt": "2026-08-24"
+    },
+    {
+      "file": "grammars/tree-sitter-rust.wasm",
+      "role": "Rust grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-rust@0.24.0",
+      "packagePath": "tree-sitter-rust.wasm",
+      "sha256": "f65f354215611fd94ad34134b3427eb3d58cbb745df7b6509ba722184db73d57",
+      "bytes": 1102547,
+      "fetchedAt": "2026-08-24"
+    },
+    {
+      "file": "grammars/tree-sitter-java.wasm",
+      "role": "Java grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-java@0.23.5",
+      "packagePath": "tree-sitter-java.wasm",
+      "sha256": "4fdeac4ca6ca089f06c6f7e562abcac1733cd465728cc7031ebb73c2019122c4",
+      "bytes": 414641,
+      "fetchedAt": "2026-08-24"
+    },
+    {
+      "file": "grammars/tree-sitter-c_sharp.wasm",
+      "role": "C# grammar (prebuilt wasm)",
+      "sourcePackage": "tree-sitter-c-sharp@0.23.5",
+      "packagePath": "tree-sitter-c_sharp.wasm",
+      "sha256": "6f69e1cae44e1c32c1eccc170dc5a9778fb94ff716f71113fe1f8c4299aa2f40",
+      "bytes": 5350581,
+      "fetchedAt": "2026-08-24"
+    }
+  ],
+  "notes": [
+    "All artifacts were fetched with `npm install web-tree-sitter tree-sitter-typescript tree-sitter-python` into a scratch dir outside the repo (%TEMP%/opencode/scope-symbols-vendor); only the files listed above were copied into vendor/. The scratch project and node_modules are never committed.",
+    "Every grammar WASM is a prebuilt artifact shipped inside its npm package; no tree-sitter CLI `build --wasm` step was required.",
+    "web-tree-sitter.js was renamed to web-tree-sitter.mjs: the repo has no package.json, so Node would treat a bare .js file as CommonJS and fail on this ESM module. Content is byte-identical to upstream web-tree-sitter.js (same sha256).",
+    "Runtime/grammar pairing verified green by scripts/test/parsers.test.mjs on Node v22.14.0: web-tree-sitter@0.26.13 + tree-sitter-typescript@0.23.2 + tree-sitter-python@0.25.0.",
+    "M4 will add go/rust/java/c# grammars into grammars/ following this same manifest format.",
+    "M4 (2026-08-24): tree-sitter-go@0.25.0, tree-sitter-rust@0.24.0, tree-sitter-java@0.23.5, tree-sitter-c-sharp@0.23.5 fetched with `npm install` into %TEMP%/opencode/scope-symbols-m4-vendor; all four ship prebuilt .wasm at package root (no tree-sitter CLI `build --wasm` needed). Pairing with web-tree-sitter@0.26.13 verified by hello-world smoke parses: go/rust root source_file, java root program, c_sharp root compilation_unit."
+  ]
+}

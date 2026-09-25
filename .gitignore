@@ -1,0 +1,7 @@
+# Both graph stores. Scope indexes its own repo when you scan it here.
+.scope/
+
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>scope symbols</title>
+<style>
+  :root {
+    --bg: #10141a;
+    --panel: #161d26;
+    --panel2: #121922;
+    --border: #24303c;
+    --text: #d7dee6;
+    --muted: #8a97a3;
+    --accent: #58a6ff;
+    --drift: #ff5257;
+    --dangle: #ffa657;
+    --ok: #56d364;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 12px;
+    background: var(--panel2);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  #brand { font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+  #brand .root { font-weight: 400; color: var(--muted); font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  nav#tabs { display: flex; gap: 4px; }
+  button.tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font: inherit;
+    padding: 4px 12px;
+    cursor: pointer;
+  }
+  button.tab[aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: rgba(88,166,255,.08); }
+  button.tab:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #lens-chip {
+    display: inline-block; min-width: 18px; text-align: center;
+    margin-left: 6px; padding: 0 5px; border-radius: 9px;
+    background: #3a2530; color: var(--drift); font-size: 11px;
+  }
+  #lens-chip.clean { background: #1d3323; color: var(--ok); }
+  #lens-chip.absent { background: transparent; color: var(--muted); }
+  #search {
+    margin-left: auto;
+    width: 240px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 5px 9px;
+    font: inherit;
+  }
+  #banner {
+    background: #33270f;
+    border-bottom: 1px solid #57431a;
+    color: #f0d38a;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #banner button { margin-left: auto; background: none; border: 0; color: inherit; cursor: pointer; font-size: 14px; }
+  main { position: relative; flex: 1; min-height: 0; }
+  canvas#board { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+  canvas#board.grabbing { cursor: grabbing; }
+  aside.panel {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 340px;
+    max-height: calc(100% - 20px);
+    overflow: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.35);
+  }
+  aside.panel#results { top: 58px; max-height: calc(100% - 70px); }
+  aside.panel h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  aside.panel .close {
+    float: right; background: none; border: 0; color: var(--muted);
+    font-size: 15px; cursor: pointer; line-height: 1;
+  }
+  aside.panel dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; }
+  aside.panel dt { color: var(--muted); }
+  aside.panel dd { margin: 0; word-break: break-all; }
+  aside.panel dd.mono { font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .badge { display: inline-block; padding: 0 6px; border-radius: 8px; font-size: 11px; margin-left: 6px; }
+  .badge.drift { background: #3d1a1f; color: var(--drift); }
+  .badge.dangle { background: #3b2a14; color: var(--dangle); }
+  .conf-heuristic { color: var(--dangle); }
+  .conf-exact { color: var(--ok); }
+  aside.panel .actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  aside.panel .actions button {
+    background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 3px 9px; cursor: pointer; font: inherit; font-size: 12px;
+  }
+  .empty {
+    color: var(--muted);
+    background: var(--panel2);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 12.5px;
+  }
+  .section { margin-bottom: 10px; }
+  .section h3 { margin: 0 0 4px; font-size: 12px; color: var(--text); }
+  .section h3 .n { color: var(--muted); font-weight: 400; }
+  ul.items { margin: 0; padding: 0 0 0 2px; list-style: none; }
+  ul.items li {
+    padding: 3px 6px; border-radius: 5px; cursor: pointer;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  ul.items li:hover { background: rgba(88,166,255,.09); }
+  ul.items li .dim { color: var(--muted); }
+  #legend {
+    position: absolute; left: 10px; bottom: 10px;
+    background: rgba(18,25,34,.92);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 11.5px;
+    display: flex; flex-wrap: wrap; gap: 4px 12px;
+    max-width: 70%;
+  }
+  #legend .chip { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+  #legend .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  #legend .line { width: 22px; height: 0; border-top: 2px solid #93a4b3; display: inline-block; }
+  #legend .line.dashed { border-top-style: dashed; }
+  footer {
+    display: flex; gap: 16px; align-items: center;
+    padding: 5px 12px;
+    background: var(--panel2);
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  footer #counts-line { color: var(--text); }
+  footer #hint-line { margin-left: auto; overflow: hidden; text-overflow: ellipsis; }
+  footer button { background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;cursor:pointer;font-size:11px;padding:1px 7px; }
+  #flow-controls {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(18,25,34,.92);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 10px; font-size: 12.5px;
+  }
+  #flow-controls select {
+    background: var(--panel); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 6px; max-width: 320px; font: inherit;
+  }
+  #overlay-msg {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  #overlay-msg .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 22px; max-width: 440px; text-align: center;
+    color: var(--muted); box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  }
+  #overlay-msg .card strong { color: var(--text); display: block; margin-bottom: 6px; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div id="brand">scope symbols <span class="root" id="root-line"></span></div>
+  <nav id="tabs" aria-label="Viewer lenses">
+    <button class="tab" id="tab-graph" aria-pressed="true">Graph</button>
+    <button class="tab" id="tab-flow" aria-pressed="false">Flow</button>
+    <button class="tab" id="tab-lens" aria-pressed="false">Change Lens <span id="lens-chip" class="absent">&ndash;</span></button>
+  </nav>
+  <input id="search" type="search" placeholder="name, path, or kind:module ( / )" aria-label="Filter by name or path substring, or by kind with kind:module" autocomplete="off" spellcheck="false">
+</header>
+<div id="banner" hidden>
+  <span id="banner-text"></span>
+  <button id="banner-close" aria-label="Dismiss truncation notice">&#215;</button>
+</div>
+<main>
+  <canvas id="board"></canvas>
+
+  <div id="flow-controls" hidden>
+    <label for="flow-entry">entry:</label>
+    <select id="flow-entry"></select>
+    <span id="flow-depth-note" class="dim"></span>
+  </div>
+
+  <aside class="panel" id="inspector" hidden></aside>
+  <aside class="panel" id="lens-panel" hidden></aside>
+  <aside class="panel" id="results" hidden></aside>
+
+  <div id="overlay-msg" hidden><div class="card" id="overlay-card"></div></div>
+
+  <div id="legend"></div>
+</main>
+<footer>
+  <span id="counts-line"></span>
+  <span id="mode-line"></span>
+  <span id="hint-line">drag: pan &middot; wheel: zoom &middot; click: inspect &middot; keys: 1/2/3 tabs, / search</span>
+  <button id="reset-view">reset view</button>
+</footer>
+
+<script type="application/json" id="scope-symbols-data">__SCOPE_SYMBOLS_PAYLOAD__</script>
+<script>
+'use strict';
+(function () {
+  var DATA = JSON.parse(document.getElementById('scope-symbols-data').textContent);
+
+  /* ---------- derived structures ---------- */
+  var NODES = DATA.nodes;
+  var EDGES = DATA.edges;
+  var byId = new Map();
+  for (var ni = 0; ni < NODES.length; ni++) {
+    var ND = NODES[ni];
+    ND.deg = 0; ND.vx = 0; ND.vy = 0; ND.x = 0; ND.y = 0;
+    byId.set(ND.i, ND);
+  }
+  for (var ei = 0; ei < EDGES.length; ei++) {
+    var E = EDGES[ei];
+    var a = byId.get(E.s), b = byId.get(E.d);
+    if (a) a.deg++; if (b) b.deg++;
+  }
+
+  var FLOW_SET = { call: 1, 'import': 1, route: 1, 'extends': 1, implements: 1 };
+  var CONTAINS = { contains: 1 };
+  var adjOut = new Map(), adjIn = new Map();
+  for (var fi = 0; fi < EDGES.length; fi++) {
+    var FE = EDGES[fi];
+    if (!FLOW_SET[FE.t]) continue;
+    if (!adjOut.has(FE.s)) adjOut.set(FE.s, []);
+    if (!adjIn.has(FE.d)) adjIn.set(FE.d, []);
+    adjOut.get(FE.s).push({ o: FE.d, c: FE.c });
+    adjIn.get(FE.d).push({ o: FE.s, c: FE.c });
+  }
+
+  var LENS = DATA.lens || null;
+  var driftById = new Map(), dangleBySrc = new Map();
+  if (LENS) {
+    (LENS.drift || []).forEach(function (d) { if (d.i) driftById.set(d.i, d); });
+    (LENS.dangling || []).forEach(function (g) { if (g.si) dangleBySrc.set(g.si, g); });
+  }
+
+  var KIND_COLORS = {
+    'function': '#58a6ff', 'method': '#bc8cff', 'class': '#e3b341',
+    'module': '#56d364', 'route': '#ff7b72', 'var': '#39d2c0',
+    'interface': '#d2a8ff'
+  };
+  function kindColor(k) { return KIND_COLORS[k] || '#9aa7b0'; }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  /* ---------- static chrome ---------- */
+  document.getElementById('root-line').textContent = DATA.root;
+  var chip = document.getElementById('lens-chip');
+  if (LENS) {
+    chip.classList.remove('absent');
+    chip.textContent = String(LENS.issues);
+    chip.classList.toggle('clean', LENS.issues === 0);
+  } else {
+    chip.textContent = 'no check';
+  }
+
+  var kindsSeen = {};
+  NODES.forEach(function (nd) { kindsSeen[nd.k] = 1; });
+  var legendHtml = '';
+  Object.keys(KIND_COLORS).forEach(function (k) {
+    if (!kindsSeen[k]) return;
+    legendHtml += '<span class="chip"><span class="dot" style="background:' + KIND_COLORS[k] + '"></span>' + esc(k) + '</span>';
+  });
+  Object.keys(kindsSeen).forEach(function (k) {
+    if (!KIND_COLORS[k]) legendHtml += '<span class="chip"><span class="dot" style="background:#9aa7b0"></span>' + esc(k) + '</span>';
+  });
+  legendHtml += '<span class="chip"><span class="line"></span>exact</span>' +
+                '<span class="chip"><span class="line dashed"></span>heuristic</span>';
+  document.getElementById('legend').innerHTML = legendHtml;
+
+  var countsLine = DATA.shown.n + ' of ' + DATA.totals.n + ' symbols \u00b7 ' +
+                   DATA.shown.e + ' of ' + DATA.totals.e + ' relations' +
+                   (DATA.notesPartial ? ' \u00b7 note counts partial' : '');
+  document.getElementById('counts-line').textContent = countsLine;
+
+  if (DATA.truncated) {
+    var banner = document.getElementById('banner');
+    document.getElementById('banner-text').textContent =
+      'Truncated to stay within the self-contained size limit (' + DATA.maxTotalBytes + ' bytes): showing ' +
+      DATA.shown.n + ' of ' + DATA.totals.n + ' symbols and ' +
+      DATA.shown.e + ' of ' + DATA.totals.e + ' relations. ' +
+      'The cut keeps the most connected symbols first (then larger spans); narrow the scanned scope and re-run `scope scan` + `scope view` for full detail.';
+    banner.hidden = false;
+    document.getElementById('banner-close').addEventListener('click', function () { banner.hidden = true; });
+  }
+
+  /* ---------- canvas / view transform ---------- */
+  var canvas = document.getElementById('board');
+  var ctx = canvas.getContext('2d');
+  var dpr = 1;
+  var view = { x: 0, y: 0, k: 1 };
+  var W = 0, H = 0;
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+    }
+    requestDraw();
+  }
+  window.addEventListener('resize', resize);
+
+  function screenToWorld(sx, sy) {
+    return { x: (sx - view.x) / view.k, y: (sy - view.y) / view.k };
+  }
+  function centerOn(wx, wy, k) {
+    if (k) view.k = k;
+    view.x = W / 2 - wx * view.k;
+    view.y = H / 2 - wy * view.k;
+    requestDraw();
+  }
+  function resetView() {
+    view.k = 1;
+    centerOn(0, 0);
+  }
+  document.getElementById('reset-view').addEventListener('click', resetView);
+
+  /* ---------- force layout (grid-accelerated, deterministic seed order) ---------- */
+  var SPACING = NODES.length > 6000 ? 9 : NODES.length > 2000 ? 13 : NODES.length > 500 ? 20 : 30;
+  var ALPHA_MIN = 0.004;
+  var MAX_TICKS = 400;
+  var alpha = 0;
+  var ticks = 0;
+  var layoutDone = false;
+  var springPairs = [];
+  for (var pi = 0; pi < EDGES.length; pi++) {
+    var PE = EDGES[pi];
+    var pa = byId.get(PE.s), pb = byId.get(PE.d);
+    if (pa && pb) springPairs.push([pa, pb, FLOW_SET[PE.t] ? 0.06 : CONTAINS[PE.t] ? 0.03 : 0.04]);
+  }
+
+  (function seed() {
+    var GA = Math.PI * (3 - Math.sqrt(5));
+    var R0 = Math.max(160, Math.sqrt(NODES.length) * SPACING * 0.75);
+    for (var i = 0; i < NODES.length; i++) {
+      var nd = NODES[i];
+      var r = R0 * Math.sqrt((i + 0.5) / Math.max(1, NODES.length));
+      var ang = i * GA;
+      nd.x = r * Math.cos(ang);
+      nd.y = r * Math.sin(ang);
+    }
+  })();
+
+  function simulateStep() {
+    var n = NODES.length;
+    if (!n) return;
+    var cell = SPACING * 2;
+    var grid = new Map();
+    for (var i = 0; i < n; i++) {
+      var nd = NODES[i];
+      var key = Math.floor(nd.x / cell) + ':' + Math.floor(nd.y / cell);
+      var bucket = grid.get(key);
+      if (!bucket) { bucket = []; grid.set(key, bucket); }
+      bucket.push(nd);
+    }
+    var k2 = SPACING * SPACING;
+    for (var j = 0; j < n; j++) {
+      var p = NODES[j];
+      var gx = Math.floor(p.x / cell), gy = Math.floor(p.y / cell);
+      for (var ox = -1; ox <= 1; ox++) {
+        for (var oy = -1; oy <= 1; oy++) {
+          var bucket2 = grid.get((gx + ox) + ':' + (gy + oy));
+          if (!bucket2) continue;
+          for (var m = 0; m < bucket2.length; m++) {
+            var q = bucket2[m];
+            if (q === p) continue;
+            var dx = p.x - q.x, dy = p.y - q.y;
+            var d2 = dx * dx + dy * dy;
+            if (d2 > cell * cell * 4 || d2 === 0) { if (d2 === 0) { p.vx += 0.5; p.vy += 0.3; } continue; }
+            var f = (k2 / d2) * 0.35;
+            p.vx += (dx / Math.sqrt(d2)) * f;
+            p.vy += (dy / Math.sqrt(d2)) * f;
+          }
+        }
+      }
+      p.vx -= p.x * 0.0006;
+      p.vy -= p.y * 0.0006;
+    }
+    for (var s = 0; s < springPairs.length; s++) {
+      var pr = springPairs[s];
+      var A = pr[0], B = pr[1], ks = pr[2];
+      var sx = B.x - A.x, sy = B.y - A.y;
+      var dist = Math.sqrt(sx * sx + sy * sy) || 1;
+      var fs = ((dist - SPACING) / dist) * ks * dist;
+      A.vx += (sx / dist) * fs; A.vy += (sy / dist) * fs;
+      B.vx -= (sx / dist) * fs; B.vy -= (sy / dist) * fs;
+    }
+    var damp = 0.82;
+    for (var t = 0; t < n; t++) {
+      var u = NODES[t];
+      if (u.pinned) { u.vx = 0; u.vy = 0; continue; }
+      u.x += Math.max(-SPACING, Math.min(SPACING, u.vx * alpha));
+      u.y += Math.max(-SPACING, Math.min(SPACING, u.vy * alpha));
+      u.vx *= damp; u.vy *= damp;
+    }
+  }
+
+  function startLayout(reheat) {
+    alpha = reheat || 1;
+    ticks = 0;
+    layoutDone = false;
+    setHint('layouting\u2026');
+    function frame() {
+      var steps = NODES.length > 3000 ? 2 : 3;
+      for (var i = 0; i < steps; i++) {
+        simulateStep();
+        ticks++;
+        alpha = Math.max(ALPHA_MIN, alpha * 0.982);
+        if (alpha <= ALPHA_MIN || ticks >= MAX_TICKS) break;
+      }
+      requestDraw();
+      if (alpha > ALPHA_MIN && ticks < MAX_TICKS) {
+        requestAnimationFrame(frame);
+      } else {
+        layoutDone = true;
+        fitView();
+        setHint('');
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function fitView() {
+    if (!NODES.length) return;
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    NODES.forEach(function (nd) {
+      if (nd.x < minX) minX = nd.x; if (nd.x > maxX) maxX = nd.x;
+      if (nd.y < minY) minY = nd.y; if (nd.y > maxY) maxY = nd.y;
+    });
+    var pad = 40;
+    var kx = W / Math.max(1, maxX - minX + pad * 2);
+    var ky = H / Math.max(1, maxY - minY + pad * 2);
+    view.k = Math.max(0.02, Math.min(2.5, Math.min(kx, ky)));
+    view.x = W / 2 - ((minX + maxX) / 2) * view.k;
+    view.y = H / 2 - ((minY + maxY) / 2) * view.k;
+    requestDraw();
+  }
+
+  /* ---------- rendering ---------- */
+  var MODE = 'graph';           // graph | flow | lens
+  var selectedId = null;
+  var matchSet = null;          // Set of ids matching current search
+  var hoverId = null;
+  var needDraw = true;
+  function requestDraw() { needDraw = true; }
+  function setHint(t) { document.getElementById('mode-line').textContent = t; }
+
+  function edgeStyle(c) {
+    if (c === 'exact') { ctx.setLineDash([]); ctx.strokeStyle = 'rgba(147,164,179,0.28)'; }
+    else { ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(147,164,179,0.16)'; }
+  }
+
+  function drawGraph(lensOverlay) {
+    var k = view.k;
+    var vx0 = -view.x / k, vy0 = -view.y / k, vx1 = (W - view.x) / k, vy1 = (H - view.y) / k;
+    ctx.lineWidth = 1 / k;
+    for (var i = 0; i < EDGES.length; i++) {
+      var e = EDGES[i];
+      var a = byId.get(e.s), b = byId.get(e.d);
+      if (!a || !b) continue;
+      if (Math.max(a.x, b.x) < vx0 || Math.min(a.x, b.x) > vx1 ||
+          Math.max(a.y, b.y) < vy0 || Math.min(a.y, b.y) > vy1) continue;
+      if (MODE === 'lens' || matchSet) {
+        var lit = (matchSet && (matchSet.has(e.s) || matchSet.has(e.d))) ||
+                  (driftById.has(e.s) && driftById.has(e.d));
+        if (!lit) edgeStyle(e.c); else { ctx.setLineDash([]); ctx.strokeStyle = 'rgba(147,164,179,0.5)'; }
+      } else {
+        edgeStyle(e.c);
+      }
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    var showLabels = k > 0.8 && NODES.length <= 2200;
+    ctx.font = 11 / k + 'px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    for (var j = 0; j < NODES.length; j++) {
+      var nd = NODES[j];
+      if (nd.x < vx0 - 20 || nd.x > vx1 + 20 || nd.y < vy0 - 20 || nd.y > vy1 + 20) continue;
+      var r = Math.min(9, Math.max(2, 1.6 + Math.sqrt(nd.deg) * 0.9));
+      var dimmed = matchSet && !matchSet.has(nd.i) && nd.i !== selectedId;
+      ctx.globalAlpha = dimmed ? 0.13 : 1;
+      ctx.beginPath();
+      ctx.arc(nd.x, nd.y, r, 0, 6.2832);
+      ctx.fillStyle = kindColor(nd.k);
+      ctx.fill();
+      if (matchSet && matchSet.has(nd.i)) {
+        ctx.beginPath();
+        ctx.arc(nd.x, nd.y, r + 3.5 / k, 0, 6.2832);
+        ctx.strokeStyle = '#ffe066';
+        ctx.lineWidth = 2 / k;
+        ctx.stroke();
+        ctx.lineWidth = 1 / k;
+      }
+      if (selectedId === nd.i || hoverId === nd.i) {
+        ctx.beginPath();
+        ctx.arc(nd.x, nd.y, r + 2.5 / k, 0, 6.2832);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.6 / k;
+        ctx.stroke();
+        ctx.lineWidth = 1 / k;
+      }
+      if (lensOverlay) {
+        if (driftById.has(nd.i)) ring(nd, r + 4 / k, '#ff5257', 2.4 / k);
+        else if (dangleBySrc.has(nd.i)) ring(nd, r + 4 / k, '#ffa657', 2.4 / k);
+      }
+      if (showLabels && !dimmed) {
+        ctx.fillStyle = 'rgba(215,222,230,0.85)';
+        ctx.fillText(nd.n, nd.x, nd.y - r - 3 / k);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function ring(nd, r, color, w) {
+    ctx.beginPath();
+    ctx.arc(nd.x, nd.y, r, 0, 6.2832);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.lineWidth = 1 / view.k;
+  }
+
+  /* ---------- flow (layered, red upstream / blue downstream) ---------- */
+  var FLOW_DEPTH = 3;
+  var COL_W = 260, ROW_H = 36, BOX_W = 150, BOX_H = 22;
+  var flowEntry = null;
+  var flow = null; // { cols: [[ids]], colOf, ribbons:[{a,b,color,c}], hiddenUp, hiddenDown, upDepth, downDepth }
+
+  function bfs(entryId, dir, maxDepth) {
+    var adj = dir === 'out' ? adjOut : adjIn;
+    var layers = new Map(); // id -> depth
+    var ribbons = [];       // {a,b,c(color-side),cf}
+    layers.set(entryId, 0);
+    var frontier = [entryId];
+    var hidden = 0;
+    for (var d = 1; d <= maxDepth; d++) {
+      var next = [];
+      frontier.forEach(function (id) {
+        (adj.get(id) || []).forEach(function (lk) {
+          if (!byId.has(lk.o)) return;
+          if (!layers.has(lk.o)) {
+            layers.set(lk.o, d);
+            next.push(lk.o);
+            ribbons.push(dir === 'out' ? { a: id, b: lk.o, cf: lk.c } : { a: lk.o, b: id, cf: lk.c });
+          }
+        });
+      });
+      if (d === maxDepth) {
+        next.forEach(function (id) {
+          (adj.get(id) || []).forEach(function (lk) { if (byId.has(lk.o) && !layers.has(lk.o)) hidden++; });
+        });
+      }
+      frontier = next;
+      if (!frontier.length) break;
+    }
+    return { layers: layers, ribbons: ribbons, hidden: hidden, depth: d - 1 };
+  }
+
+  function computeFlow(entryId) {
+    var down = bfs(entryId, 'out', FLOW_DEPTH);
+    var up = bfs(entryId, 'in', FLOW_DEPTH);
+    var colOf = new Map();
+    up.layers.forEach(function (dv, id) { colOf.set(id, dv - up.depth); });
+    down.layers.forEach(function (dv, id) { if (!colOf.has(id)) colOf.set(id, dv); });
+    var minCol = -up.depth, maxCol = down.depth;
+    var cols = [];
+    for (var c = minCol; c <= maxCol; c++) cols.push([]);
+    var ids = [];
+    colOf.forEach(function (_col, id) { ids.push(id); });
+    ids.sort();
+    ids.forEach(function (id) { cols[colOf.get(id) - minCol].push(id); });
+
+    function neighborCols(id) {
+      var acc = { sum: 0, cnt: 0 };
+      (adjOut.get(id) || []).forEach(function (lk) {
+        var cc = colOf.get(lk.o);
+        if (cc !== undefined) { acc.sum += cc; acc.cnt++; }
+      });
+      (adjIn.get(id) || []).forEach(function (lk) {
+        var cc = colOf.get(lk.o);
+        if (cc !== undefined) { acc.sum += cc; acc.cnt++; }
+      });
+      return acc.cnt ? acc.sum / acc.cnt : null;
+    }
+    for (var pass = 0; pass < 3; pass++) {
+      var order = pass % 2 === 0 ? cols.slice().reverse() : cols;
+      order.forEach(function (colIds) {
+        var rows = colIds.map(function (id) {
+          var bc = neighborCols(id);
+          return { id: id, key: bc === null ? byId.get(id).n.toLowerCase() : bc };
+        });
+        rows.sort(function (p, q) { return p.key - q.key || (byId.get(p.id).n < byId.get(q.id).n ? -1 : 1); });
+        rows.forEach(function (rw, idx) {
+          var nd = byId.get(rw.id);
+          nd.fx = (colOf.get(rw.id) - minCol) * COL_W;
+          nd.fy = (idx - (rows.length - 1) / 2) * ROW_H;
+        });
+      });
+    }
+    var seenRibbon = new Set();
+    var ribbons = [];
+    up.ribbons.concat(down.ribbons).forEach(function (rb) {
+      var key = rb.a + '>' + rb.b;
+      if (seenRibbon.has(key)) return;
+      seenRibbon.add(key);
+      ribbons.push(rb);
+    });
+    var minFy = Infinity, maxFy = -Infinity;
+    colOf.forEach(function (_c, id) {
+      var nd = byId.get(id);
+      if (!nd) return;
+      if (nd.fy < minFy) minFy = nd.fy;
+      if (nd.fy > maxFy) maxFy = nd.fy;
+    });
+    return {
+      colOf: colOf, cols: cols, minCol: minCol,
+      ribbons: ribbons,
+      hiddenUp: up.hidden, hiddenDown: down.hidden,
+      upDepth: up.depth, downDepth: down.depth,
+      minFy: minFy === Infinity ? 0 : minFy,
+      maxFy: maxFy === -Infinity ? 0 : maxFy
+    };
+  }
+
+  function ribbonPath(x1, y1, x2, y2) {
+    var mx = (x1 + x2) / 2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.bezierCurveTo(mx, y1, mx, y2, x2, y2);
+  }
+
+  function drawFlow() {
+    if (!flow) return;
+    var k = view.k;
+    ctx.lineWidth = 1.6 / k;
+    flow.ribbons.forEach(function (rb) {
+      var A = byId.get(rb.a), B = byId.get(rb.b);
+      if (!A || !B) return;
+      var ca = flow.colOf.get(rb.a), cb = flow.colOf.get(rb.b);
+      // red ribbons carry upstream (caller-side) relations, blue downstream deps
+      var color = Math.min(ca, cb) < 0 ? 'rgba(255,90,95,' : 'rgba(88,166,255,';
+      ctx.strokeStyle = color + (rb.cf === 'exact' ? '0.55)' : '0.28)');
+      if (rb.cf === 'exact') ctx.setLineDash([]); else ctx.setLineDash([5, 4]);
+      ribbonPath(A.fx, A.fy, B.fx, B.fy);
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    ctx.font = 11 / k + 'px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    var headerY = flow.minFy - 26;
+    for (var c = 0; c < flow.cols.length; c++) {
+      var rel = c - flow.upDepth;
+      var head =
+        rel === 0 ? 'entry / source \u00b7 ' + flow.cols[c].length :
+        rel < 0 ? 'callers \u00b7 depth ' + (-rel) + ' \u00b7 ' + flow.cols[c].length
+                : 'deps \u00b7 +' + rel + ' \u00b7 ' + flow.cols[c].length;
+      if (rel === -1 && flow.hiddenUp > 0) head += ' (+' + flow.hiddenUp + ' beyond)';
+      if (rel === 1 && flow.hiddenDown > 0) head += ' (+' + flow.hiddenDown + ' beyond)';
+      ctx.fillStyle = rel === 0 ? 'rgba(255,215,106,0.95)' : 'rgba(138,151,163,0.9)';
+      ctx.fillText(head, c * COL_W, headerY);
+    }
+
+    flow.colOf.forEach(function (_col, id) {
+      var nd = byId.get(id);
+      if (!nd) return;
+      var x = nd.fx - BOX_W / 2, y = nd.fy - BOX_H / 2;
+      var isEntry = id === flowEntry;
+      ctx.beginPath();
+      roundRect(x, y, BOX_W, BOX_H, 5);
+      ctx.fillStyle = kindColor(nd.k);
+      ctx.globalAlpha = 0.22;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = isEntry ? '#ffd76a' : kindColor(nd.k);
+      ctx.lineWidth = (isEntry ? 2 : 1.1) / k;
+      ctx.stroke();
+      if (driftById.has(id)) ringXY(nd.fx + BOX_W / 2 + 5 / k, nd.fy, 4 / k, '#ff5257', 2 / k);
+      else if (dangleBySrc.has(id)) ringXY(nd.fx + BOX_W / 2 + 5 / k, nd.fy, 4 / k, '#ffa657', 2 / k);
+      ctx.fillStyle = '#d7dee6';
+      ctx.fillText(trunc(nd.n, 20), nd.fx, nd.fy + 4 / k);
+    });
+  }
+  function trunc(s, n) { s = String(s); return s.length > n ? s.slice(0, n - 1) + '\u2026' : s; }
+  function roundRect(x, y, w, h, r) {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function ringXY(x, y, r, color, w) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 6.2832);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.setLineDash([]);
+    ctx.stroke();
+    ctx.lineWidth = 1 / view.k;
+  }
+
+  /* ---------- main draw loop ---------- */
+  function drawFrame() {
+    if (needDraw) {
+      needDraw = false;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = '#10141a';
+      ctx.fillRect(0, 0, W, H);
+      ctx.setTransform(dpr * view.k, 0, 0, dpr * view.k, dpr * view.x, dpr * view.y);
+      if (MODE === 'flow') drawFlow();
+      else drawGraph(MODE === 'lens');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    requestAnimationFrame(drawFrame);
+  }
+
+  /* ---------- interaction ---------- */
+  var drag = null; // {kind:'pan'|'node', id?, sx, sy, moved}
+  canvas.addEventListener('pointerdown', function (ev) {
+    canvas.setPointerCapture(ev.pointerId);
+    var rect = canvas.getBoundingClientRect();
+    var sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+    var hit = hitTest(sx, sy);
+    drag = { sx: sx, sy: sy, moved: false, nodeId: hit ? hit.i : null, kind: hit ? 'node' : 'pan' };
+    if (hit && MODE !== 'flow') hit.pinned = true;
+    canvas.classList.add('grabbing');
+  });
+  canvas.addEventListener('pointermove', function (ev) {
+    var rect = canvas.getBoundingClientRect();
+    var sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+    if (!drag) {
+      var hov = hitTest(sx, sy);
+      var newHover = hov ? hov.i : null;
+      if (newHover !== hoverId) { hoverId = newHover; canvas.style.cursor = hov ? 'pointer' : 'grab'; requestDraw(); }
+      return;
+    }
+    var dx = sx - drag.sx, dy = sy - drag.sy;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    if (drag.kind === 'pan') {
+      view.x += ev.movementX;
+      view.y += ev.movementY;
+    } else if (drag.nodeId) {
+      var nd = byId.get(drag.nodeId);
+      if (MODE === 'flow') {
+        nd.fx += dx / view.k; nd.fy += dy / view.k;
+      } else {
+        var w = screenToWorld(sx, sy);
+        nd.x = w.x; nd.y = w.y;
+        alpha = Math.max(alpha, 0.12);
+      }
+    }
+    requestDraw();
+  });
+  canvas.addEventListener('pointerup', function (ev) {
+    canvas.classList.remove('grabbing');
+    if (!drag) return;
+    var wasPan = drag.kind === 'pan';
+    var movedFar = drag.moved;
+    var clickedNode = drag.nodeId;
+    if (clickedNode && !wasPan && MODE !== 'flow') {
+      var nd = byId.get(clickedNode);
+      if (nd) nd.pinned = false;
+    }
+    if (!movedFar) {
+      if (clickedNode) selectNode(clickedNode);
+      else if (wasPan) { selectedId = null; hidePanels(['lens-panel', 'results']); requestDraw(); }
+    }
+    drag = null;
+  });
+  canvas.addEventListener('wheel', function (ev) {
+    ev.preventDefault();
+    var rect = canvas.getBoundingClientRect();
+    var sx = ev.clientX - rect.left, sy = ev.clientY - rect.top;
+    var factor = Math.pow(1.0015, -ev.deltaY);
+    var newK = Math.max(0.02, Math.min(12, view.k * factor));
+    var wpt = screenToWorld(sx, sy);
+    view.x = sx - wpt.x * newK;
+    view.y = sy - wpt.y * newK;
+    view.k = newK;
+    requestDraw();
+  }, { passive: false });
+
+  function hitTest(sx, sy) {
+    if (MODE === 'flow') {
+      if (!flow) return null;
+      var w = screenToWorld(sx, sy);
+      var found = null;
+      flow.colOf.forEach(function (_c, id) {
+        var nd = byId.get(id);
+        if (!nd) return;
+        if (Math.abs(w.x - nd.fx) <= BOX_W / 2 && Math.abs(w.y - nd.fy) <= BOX_H / 2) found = nd;
+      });
+      return found;
+    }
+    var best = null, bestD = Infinity;
+    var wpt = screenToWorld(sx, sy);
+    var thresh = 8 / view.k + 4;
+    for (var i = 0; i < NODES.length; i++) {
+      var nd = NODES[i];
+      var dx = nd.x - wpt.x, dy = nd.y - wpt.y;
+      var d2 = dx * dx + dy * dy;
+      if (d2 < bestD) { bestD = d2; best = nd; }
+    }
+    return best && bestD <= thresh * thresh ? best : null;
+  }
+
+  /* ---------- panels ---------- */
+  function hidePanels(except) {
+    ['inspector', 'lens-panel', 'results'].forEach(function (id) {
+      if (except && except.indexOf(id) >= 0) return;
+      document.getElementById(id).hidden = true;
+    });
+  }
+
+  function confSpan(c) {
+    return '<span class="conf-' + esc(c) + '">' + esc(c) + '</span>';
+  }
+
+  function selectNode(id) {
+    var nd = byId.get(id);
+    if (!nd) return;
+    selectedId = id;
+    var panel = document.getElementById('inspector');
+    var notesCount = DATA.notes[id] || 0;
+    var badges = '';
+    if (driftById.has(id)) badges += '<span class="badge drift">DRIFTED</span>';
+    if (dangleBySrc.has(id)) badges += '<span class="badge dangle">DANGLING REF</span>';
+    panel.innerHTML =
+      '<button class="close" aria-label="Close inspector">&#215;</button>' +
+      '<h2>inspect' + badges + '</h2>' +
+      '<dl>' +
+      '<dt>name</dt><dd><strong>' + esc(nd.n) + '</strong></dd>' +
+      '<dt>kind</dt><dd>' + esc(nd.k) + '</dd>' +
+      '<dt>path</dt><dd class="mono">' + esc(nd.p) + ':' + nd.l[0] + '-' + nd.l[1] + '</dd>' +
+      '<dt>signature</dt><dd class="mono">' + esc(nd.g || '(none)') + '</dd>' +
+      '<dt>confidence</dt><dd>' + confSpan(nd.c) + '</dd>' +
+      '<dt>degree</dt><dd>' + nd.deg + '</dd>' +
+      '<dt>notes</dt><dd>' + notesCount + '</dd>' +
+      '</dl>' +
+      '<div class="actions">' +
+      '<button data-act="flow">Flow from here</button>' +
+      '<button data-act="center">Center</button>' +
+      '</div>';
+    panel.hidden = false;
+    panel.querySelector('.close').addEventListener('click', function () {
+      panel.hidden = true; selectedId = null; requestDraw();
+    });
+    panel.querySelector('[data-act="flow"]').addEventListener('click', function () {
+      setMode('flow'); setFlowEntry(id);
+    });
+    panel.querySelector('[data-act="center"]').addEventListener('click', function () {
+      if (MODE === 'flow') centerOn(nd.fx, nd.fy); else centerOn(nd.x, nd.y);
+    });
+    requestDraw();
+  }
+
+  /* ---------- lens panel ---------- */
+  function renderLensPanel() {
+    var panel = document.getElementById('lens-panel');
+    if (!LENS) {
+      panel.innerHTML =
+        '<h2>change lens</h2>' +
+        '<div class="empty">No check has run yet (no <span class="mono">check-latest.json</span> in this index).' +
+        '<br><br>Run <span class="mono">scope check</span> after edits, then regenerate with <span class="mono">scope view</span> to see pending changes and drift overlaid here.</div>';
+      panel.hidden = false;
+      return;
+    }
+    var html = '<h2>change lens</h2>';
+    if (LENS.issues === 0) {
+      html += '<div class="empty" style="border-color:#2b5234;color:var(--ok)">clean at last check \u2014 no pending issues</div>';
+    } else {
+      html += '<dl style="margin-bottom:10px">' +
+        '<dt>issues</dt><dd>' + LENS.issues + '</dd>' +
+        '<dt>drift / dangling</dt><dd>' + (LENS.counts.drift || 0) + ' / ' + (LENS.counts.dangling || 0) + '</dd>' +
+        '<dt>orphans / ambiguous</dt><dd>' + (LENS.counts.orphans || 0) + ' / ' + (LENS.counts.ambiguous || 0) + '</dd>' +
+        '<dt>edited / deleted files</dt><dd>' + (LENS.dirty ? LENS.dirty.edited.length : 0) + ' / ' + (LENS.dirty ? LENS.dirty.deleted.length : 0) + '</dd>' +
+        '</dl>';
+    }
+    function section(title, items, more, render) {
+      if (!items.length && !more) return '';
+      var lis = items.map(render).join('');
+      if (more > 0) lis += '<li class="dim">\u2026 +' + more + ' more (not embedded)</li>';
+      return '<div class="section"><h3>' + title + ' <span class="n">(' + (items.length + more) + ')</span></h3><ul class="items">' + lis + '</ul></div>';
+    }
+    html += section('drift', LENS.drift || [], LENS.moreDrift || 0, function (d) {
+      return '<li data-node="' + esc(d.i || '') + '"><span style="color:var(--drift)">&#9679;</span> ' +
+        esc(d.n) + ' <span class="dim">' + esc(d.p) + ':' + d.sl + '-' + d.el + ' \u00b7 ' + ((d.deps || []).length + (d.moreDeps || 0)) + '+ dependents</span></li>';
+    });
+    html += section('dangling references', LENS.dangling || [], LENS.moreDangling || 0, function (g) {
+      return '<li data-node="' + esc(g.si || '') + '"><span style="color:var(--dangle)">&#9679;</span> ' +
+        esc(g.sn || g.si) + ' <span class="dim">' + esc(g.type) + ' \u2192 removed "' + esc(g.tn) + '"</span></li>';
+    });
+    html += section('orphaned notes', LENS.orphans || [], LENS.moreOrphans || 0, function (o) {
+      return '<li><span class="dim">' + esc(o.text || o.key) + '</span></li>';
+    });
+    html += section('tests covering affected modules', LENS.tests || [], LENS.moreTests || 0, function (t) {
+      return '<li><span class="dim">' + confSpan(t.confidence) + ' ' + esc(t.path) + '</span></li>';
+    });
+    if ((LENS.runners || []).length) {
+      html += '<div class="section"><h3>runners</h3><ul class="items"><li><span class="dim">' +
+        LENS.runners.map(esc).join(', ') + '</span></li></ul></div>';
+    }
+    panel.innerHTML = html + '<button class="close" aria-label="Close lens panel">&#215;</button>';
+    panel.querySelector('.close').addEventListener('click', function () { panel.hidden = true; });
+    Array.prototype.forEach.call(panel.querySelectorAll('li[data-node]'), function (li) {
+      li.addEventListener('click', function () {
+        var id = li.getAttribute('data-node');
+        if (id && byId.has(id)) { selectedId = id; centerOn(byId.get(id).x, byId.get(id).y); requestDraw(); }
+      });
+    });
+    panel.hidden = false;
+  }
+
+  /* ---------- flow controls ---------- */
+  var flowSelect = document.getElementById('flow-entry');
+  function populateFlowSelect() {
+    var opts = '';
+    DATA.entrypoints.forEach(function (id) {
+      var nd = byId.get(id);
+      if (!nd) return;
+      opts += '<option value="' + esc(id) + '">' + esc(nd.n) + ' \u00b7 ' + esc(nd.k) + '</option>';
+    });
+    flowSelect.innerHTML = opts;
+    if (!opts) {
+      flowSelect.innerHTML = '<option value="">(no routes or main() in index)</option>';
+    }
+  }
+  function setFlowEntry(id) {
+    if (!byId.has(id)) return;
+    flowEntry = id;
+    flowSelect.value = id;
+    flow = computeFlow(id);
+    document.getElementById('flow-depth-note').textContent =
+      'red: upstream callers \u00b7 blue: downstream dependencies \u00b7 depth ' + FLOW_DEPTH;
+    requestDraw();
+  }
+  flowSelect.addEventListener('change', function () {
+    if (flowSelect.value) setFlowEntry(flowSelect.value);
+  });
+
+  /* ---------- search ---------- */
+  var searchBox = document.getElementById('search');
+  var resultsPanel = document.getElementById('results');
+  searchBox.addEventListener('input', function () {
+    var q = searchBox.value.trim().toLowerCase();
+    if (!q) {
+      matchSet = null;
+      resultsPanel.hidden = true;
+      requestDraw();
+      return;
+    }
+    matchSet = new Set();
+    var hits = [];
+    // `kind:module` isolates the file graph -- modules and the imports between them --
+    // the way the file graph draws it. Works for any kind in the legend; prefix match, so short
+    // queries like `kind:t` deliberately light every kind starting with t.
+    var kindQ = q.indexOf('kind:') === 0 ? q.slice(5) : null;
+    for (var i = 0; i < NODES.length; i++) {
+      var nd = NODES[i];
+      var hit = kindQ
+        ? nd.k.toLowerCase().indexOf(kindQ) === 0
+        : nd.n.toLowerCase().indexOf(q) >= 0 || nd.p.toLowerCase().indexOf(q) >= 0;
+      if (hit) {
+        matchSet.add(nd.i);
+        if (hits.length < 40) hits.push(nd);
+      }
+    }
+    resultsPanel.innerHTML =
+      '<button class="close" aria-label="Close results">&#215;</button>' +
+      '<h2>' + matchSet.size + ' match' + (matchSet.size === 1 ? '' : 'es') + '</h2>' +
+      '<ul class="items">' +
+      hits.map(function (nd) {
+        return '<li data-node="' + esc(nd.i) + '">' + esc(nd.n) +
+          ' <span class="dim">' + esc(nd.k) + ' \u00b7 ' + esc(nd.p) + ':' + nd.l[0] + '</span></li>';
+      }).join('') +
+      (hits.length < matchSet.size ? '<li class="dim">\u2026 refine to see more</li>' : '') +
+      '</ul>';
+    resultsPanel.hidden = false;
+    resultsPanel.querySelector('.close').addEventListener('click', function () {
+      resultsPanel.hidden = true; searchBox.value = ''; matchSet = null; requestDraw();
+    });
+    Array.prototype.forEach.call(resultsPanel.querySelectorAll('li[data-node]'), function (li) {
+      li.addEventListener('click', function () {
+        var id = li.getAttribute('data-node');
+        var nd = byId.get(id);
+        if (!nd) return;
+        if (MODE === 'flow') centerOn(nd.fx, nd.fy); else centerOn(nd.x, nd.y, Math.max(view.k, 1.2));
+        selectNode(id);
+      });
+    });
+    requestDraw();
+  });
+
+  /* ---------- tabs / modes ---------- */
+  var TABS = { graph: 'tab-graph', flow: 'tab-flow', lens: 'tab-lens' };
+  function setMode(mode) {
+    MODE = mode;
+    Object.keys(TABS).forEach(function (m) {
+      document.getElementById(TABS[m]).setAttribute('aria-pressed', String(m === mode));
+    });
+    document.getElementById('flow-controls').hidden = mode !== 'flow';
+    hidePanels([]);
+    if (mode === 'flow') {
+      populateFlowSelect();
+      if (!flowEntry && DATA.entrypoints.length) setFlowEntry(DATA.entrypoints[0]);
+      else if (flowEntry) setFlowEntry(flowEntry);
+      if (!DATA.entrypoints.length && !flowEntry) {
+        showOverlay('<strong>No entrypoints in this index.</strong> This index has no route handlers and no symbol named ' +
+          '<span class="mono">main</span>. Open the Graph tab, click any symbol and choose "Flow from here".');
+      } else hideOverlay();
+      setHint('layered flow \u00b7 red = upstream callers \u00b7 blue = downstream deps');
+    } else {
+      hideOverlay();
+      if (mode === 'lens') {
+        renderLensPanel();
+        setHint(LENS ? 'overlaying last-check drift (red ring) and dangling references (amber ring)' : 'no check data \u2014 run scope check');
+      } else {
+        setHint('');
+      }
+    }
+    requestDraw();
+  }
+  Object.keys(TABS).forEach(function (m, idx) {
+    document.getElementById(TABS[m]).addEventListener('click', function () { setMode(m); });
+  });
+  document.addEventListener('keydown', function (ev) {
+    // Typing in the search box must never trigger tab shortcuts ("mod2", "/api/v1");
+    // only Escape keeps its clear-and-blur behavior there.
+    if (ev.target === searchBox && ev.key !== 'Escape') return;
+    if (ev.key === '/' && document.activeElement !== searchBox) { ev.preventDefault(); searchBox.focus(); }
+    else if (ev.key === 'Escape') {
+      searchBox.value = ''; matchSet = null; resultsPanel.hidden = true; searchBox.blur(); requestDraw();
+    } else if (ev.key === '1') setMode('graph');
+    else if (ev.key === '2') setMode('flow');
+    else if (ev.key === '3') setMode('lens');
+  });
+
+  var overlay = document.getElementById('overlay-msg');
+  function showOverlay(html) {
+    document.getElementById('overlay-card').innerHTML = html;
+    overlay.hidden = false;
+  }
+  function hideOverlay() { overlay.hidden = true; }
+
+  /* ---------- empty-index state ---------- */
+  if (!NODES.length) {
+    showOverlay('<strong>Empty index.</strong> The embedded payload contains no symbols. Run <span class="mono">scope scan</span>, then <span class="mono">scope view</span> again.');
+  }
+
+  /* ---------- boot ---------- */
+  resize();
+  startLayout(1);
+  requestAnimationFrame(drawFrame);
+})();
+</script>
+</body>
+</html>
